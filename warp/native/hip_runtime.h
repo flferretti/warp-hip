@@ -12,6 +12,7 @@
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
+#include <hip/hiprtc.h>
 
 // In device code, set __CUDA_ARCH__ to 700 so that existing GPU code path
 // guards activate. Value 700 enables most features but stays below 800,
@@ -178,7 +179,7 @@ inline hipError_t cudaGraphSetConditional(void*, unsigned int)
     return hipErrorNotSupported;
 }
 
-typedef unsigned long long cuuint64_t;
+typedef uint64_t cuuint64_t;
 
 typedef int CUjit_option;
 #define CU_JIT_ERROR_LOG_BUFFER            0

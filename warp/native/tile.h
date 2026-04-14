@@ -32,6 +32,8 @@
 #include <cuda_runtime.h>
 #endif
 
+#elif defined(__HIPCC__)
+// HIP: float4 already defined by hip_runtime.h
 #else
 // If CUDA is not available (e.g., macOS build), manually define float4
 struct alignas(16) float4 {

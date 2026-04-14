@@ -573,6 +573,8 @@ def main(argv: list[str] | None = None) -> int:
                 "native/volume_builder.cu",
                 "native/warp.cu",
             ]
+            if args.hip:
+                cuda_sources.append("native/hip_util.cpp")
             warp_cu_paths = [os.path.join(build_path, cu) for cu in cuda_sources]
 
             # libmathdx is only needed when building with CUDA
