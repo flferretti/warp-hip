@@ -763,12 +763,14 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
                     hipcc_cmd = shutil.which('hipcc') or hipcc_cmd
                 hip_include = os.environ.get('HIP_INCLUDE_PATH', '')
                 hip_inc_flag = f'-I"{hip_include}"' if hip_include else ''
+                gpu_targets = os.environ.get('AMDGPU_TARGETS', '')
+                arch_flags = ' '.join(f'--offload-arch={t}' for t in gpu_targets.split(';') if t) if gpu_targets else ''
                 for cu_path in cu_paths:
                     cu_out = cu_path + _obj_tag + ".o"
                     if mode == "debug":
-                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -g -O0 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_DEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -DWP_DISABLE_CUBQL -I"{native_dir}/hip_compat" -I"{native_dir}" {hip_inc_flag} -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
+                        cuda_cmd = f'{hipcc_cmd} {arch_flags} --std=c++17 -g -O0 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_DEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -DWP_DISABLE_CUBQL -I"{native_dir}/hip_compat" -I"{native_dir}" {hip_inc_flag} -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
                     elif mode == "release":
-                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -O3 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DNDEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -DWP_DISABLE_CUBQL -I"{native_dir}/hip_compat" -I"{native_dir}" {hip_inc_flag} -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
+                        cuda_cmd = f'{hipcc_cmd} {arch_flags} --std=c++17 -O3 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DNDEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -DWP_DISABLE_CUBQL -I"{native_dir}/hip_compat" -I"{native_dir}" {hip_inc_flag} -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
                     cuda_cmds.append(cuda_cmd)
                     ld_inputs.append(quote(cu_out))
                 hip_lib_path = os.environ.get('HIP_LIB_PATH', os.path.join(rocm_path, 'lib'))
