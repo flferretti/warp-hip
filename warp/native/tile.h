@@ -41,7 +41,10 @@ struct alignas(16) float4 {
 };
 #endif
 
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#if defined(__CUDA_ARCH__)
+#define WP_TILE_SYNC __syncthreads
+#elif defined(__HIP_DEVICE_COMPILE__) && !defined(__HIPCC__)
+// hipRTC device compilation
 #define WP_TILE_SYNC __syncthreads
 #else
 #define WP_TILE_SYNC void

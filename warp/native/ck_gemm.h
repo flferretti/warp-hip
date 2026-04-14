@@ -15,6 +15,8 @@
 
 #if WP_ENABLE_HIP && WP_ENABLE_CK && defined(__HIPCC__)
 
+#include <type_traits>
+
 #ifndef CK_WAVE_SIZE
 #define CK_WAVE_SIZE 64
 #endif
@@ -199,7 +201,7 @@ __device__ void block_gemm(T* alpha, T* A, T* B, T* beta, T* C)
         const int base_m = tile_i * CK_MFMA_TILE;
         const int base_n = tile_j * CK_MFMA_TILE;
 
-        if constexpr (is_same<T, float>::value)
+        if constexpr (std::is_same<T, float>::value)
             mfma_tile_f32<M, N, K, StrA0, StrA1, StrB0, StrB1, StrC0, StrC1>(
                 lane, blk, base_m, base_n,
                 reinterpret_cast<const float*>(A),
@@ -207,7 +209,7 @@ __device__ void block_gemm(T* alpha, T* A, T* B, T* beta, T* C)
                 reinterpret_cast<const float*>(alpha),
                 reinterpret_cast<const float*>(beta),
                 reinterpret_cast<float*>(C));
-        else if constexpr (is_same<T, double>::value)
+        else if constexpr (std::is_same<T, double>::value)
             mfma_tile_f64<M, N, K, StrA0, StrA1, StrB0, StrB1, StrC0, StrC1>(
                 lane, blk, base_m, base_n,
                 reinterpret_cast<const double*>(A),
@@ -215,7 +217,7 @@ __device__ void block_gemm(T* alpha, T* A, T* B, T* beta, T* C)
                 reinterpret_cast<const double*>(alpha),
                 reinterpret_cast<const double*>(beta),
                 reinterpret_cast<double*>(C));
-        else if constexpr (is_same<T, wp::float16>::value)
+        else if constexpr (std::is_same<T, wp::float16>::value)
             mfma_tile_f16<M, N, K, StrA0, StrA1, StrB0, StrB1, StrC0, StrC1>(
                 lane, blk, base_m, base_n,
                 reinterpret_cast<const wp::float16*>(A),

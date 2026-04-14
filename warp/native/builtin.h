@@ -67,6 +67,7 @@ __device__ inline void __debugbreak() { __brkpt(); }
 #endif
 
 #if defined(__HIPCC__) && !defined(WP_NO_CRT)
+#include <hip/hip_runtime.h>
 #include <hip/hip_fp16.h>
 #elif defined(__clang__) && defined(__CUDA__) && !defined(WP_NO_CRT)
 // clang compiling CUDA code, host and device (NOTE: Used when building core library with Clang).
