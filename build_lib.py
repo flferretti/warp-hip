@@ -367,6 +367,12 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
         help="Build with AMD HIP/ROCm support instead of CUDA (mutually exclusive with --cuda)",
     )
+    group_build.add_argument(
+        "--ck",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Build with AMD Composable Kernel (CK) MFMA GEMM acceleration for tile_matmul (requires --hip)",
+    )
 
     # Clang/LLVM options
     group_clang_llvm = parser.add_argument_group(
@@ -414,6 +420,10 @@ def main(argv: list[str] | None = None) -> int:
     # Validate --hip conflicts
     if args.hip and args.cuda:
         print("Error: --hip and --cuda are mutually exclusive. Use --no-cuda --hip for HIP builds.")
+        return 1
+
+    if args.ck and not args.hip:
+        print("Error: --ck requires --hip. CK MFMA acceleration is only available on AMD GPUs.")
         return 1
 
     # Validate --no-cuda conflicts

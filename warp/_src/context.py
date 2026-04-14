@@ -4755,6 +4755,8 @@ class Runtime:
             self.core.wp_is_cuda_compatibility_enabled.restype = ctypes.c_int
             self.core.wp_is_mathdx_enabled.argtypes = None
             self.core.wp_is_mathdx_enabled.restype = ctypes.c_int
+            self.core.wp_is_ck_enabled.argtypes = None
+            self.core.wp_is_ck_enabled.restype = ctypes.c_int
             self.core.wp_is_debug_enabled.argtypes = None
             self.core.wp_is_debug_enabled.restype = ctypes.c_int
 

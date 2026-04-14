@@ -568,12 +568,15 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
 
     # is the library being built with CUDA or HIP enabled?
     hip_enabled = getattr(args, 'hip', False) and cu_paths is not None
+    ck_enabled = getattr(args, 'ck', False) and hip_enabled
     if hip_enabled:
         cuda_enabled = "WP_ENABLE_CUDA=0"
         hip_define = "WP_ENABLE_HIP=1"
     else:
         cuda_enabled = "WP_ENABLE_CUDA=1" if (cu_paths is not None) else "WP_ENABLE_CUDA=0"
         hip_define = "WP_ENABLE_HIP=0"
+
+    ck_define = "WP_ENABLE_CK=1" if ck_enabled else "WP_ENABLE_CK=0"
 
     if args.libmathdx_path:
         libmathdx_includes = f' -I"{args.libmathdx_path}/include"'
@@ -604,7 +607,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             iter_dbg = "_ITERATOR_DEBUG_LEVEL=2"
             debug = "_DEBUG"
 
-        cpp_flags = f'/nologo /std:c++17 /GR- /EHsc {runtime} /D "{debug}" /D "{cuda_enabled}" /D "{hip_define}" /D "{mathdx_enabled}" /D "{cuda_compat_enabled}" /D "{iter_dbg}" /I"{native_dir}" {includes} '
+        cpp_flags = f'/nologo /std:c++17 /GR- /EHsc {runtime} /D "{debug}" /D "{cuda_enabled}" /D "{hip_define}" /D "{ck_define}" /D "{mathdx_enabled}" /D "{cuda_compat_enabled}" /D "{iter_dbg}" /I"{native_dir}" {includes} '
 
         if args.mode == "debug":
             cpp_flags += "/FS /Zi /Od /D WP_ENABLE_DEBUG=1"
@@ -716,7 +719,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             else:
                 version = ""
 
-        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -D{hip_define} -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
+        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -D{hip_define} -D{ck_define} -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
 
         if mode == "debug":
             cpp_flags += "-O0 -g -D_DEBUG -DWP_ENABLE_DEBUG=1 -fkeep-inline-functions"
@@ -759,9 +762,9 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
                 for cu_path in cu_paths:
                     cu_out = cu_path + _obj_tag + ".o"
                     if mode == "debug":
-                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -g -O0 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_DEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -I"{native_dir}" -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
+                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -g -O0 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_DEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -I"{native_dir}" -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
                     elif mode == "release":
-                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -O3 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DNDEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -I"{native_dir}" -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
+                        cuda_cmd = f'{hipcc_cmd} --std=c++17 -O3 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DNDEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -I"{native_dir}" -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
                     cuda_cmds.append(cuda_cmd)
                     ld_inputs.append(quote(cu_out))
                 ld_inputs.append(

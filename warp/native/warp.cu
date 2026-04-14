@@ -26,6 +26,10 @@
 #include <nvJitLink.h>
 #endif
 
+#ifndef WP_ENABLE_CK
+#define WP_ENABLE_CK 0
+#endif
+
 #include <algorithm>
 #include <array>
 #include <iterator>
@@ -3906,6 +3910,12 @@ size_t wp_cuda_compile_program(
     opts.push_back("--define-macro=WP_ENABLE_MATHDX=1");
 #else
     opts.push_back("--define-macro=WP_ENABLE_MATHDX=0");
+#endif
+
+#if WP_ENABLE_CK
+    opts.push_back("--define-macro=WP_ENABLE_CK=1");
+#else
+    opts.push_back("--define-macro=WP_ENABLE_CK=0");
 #endif
 
     if (fast_math)

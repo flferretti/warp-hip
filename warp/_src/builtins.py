@@ -12017,88 +12017,70 @@ def tile_matmul_lto_dispatch_func(
     num_threads = options["block_dim"]
     arch = options["output_arch"]
 
-    if (
-        arch is None
-        or not warp._src.context.runtime.core.wp_is_mathdx_enabled()
-        or not options.get("enable_mathdx_gemm", True)
-    ):
-        # CPU/no-MathDx dispatch (or mathdx GEMM disabled via module option)
+    use_mathdx = (
+        arch is not None
+        and warp._src.context.runtime.core.wp_is_mathdx_enabled()
+        and options.get("enable_mathdx_gemm", True)
+    )
+    use_ck = (
+        arch is not None
+        and warp._src.context.runtime.core.wp_is_ck_enabled()
+        and options.get("enable_mathdx_gemm", True)
+    )
+
+    if not use_mathdx and not use_ck:
+        # CPU/no-acceleration dispatch
         return ((0, 0, 0, a, b, out, alpha, beta), (), [], 0)
+
+    def tile_flip_layout(layout):
+        if layout == "rowmajor":
+            return "colmajor"
+        elif layout == "colmajor":
+            return "rowmajor"
+
+    if use_ck:
+        build_dot = warp._src.build.build_ck_dot
     else:
+        build_dot = warp._src.build.build_lto_dot
 
-        def tile_flip_layout(layout):
-            if layout == "rowmajor":
-                return "colmajor"
-            elif layout == "colmajor":
-                return "rowmajor"
-
-        # generate the LTOs
-        #    C += A * B
-        (fun_forward, lto_forward) = warp._src.build.build_lto_dot(
-            M,
-            N,
-            K,
-            a.type.dtype,
-            b.type.dtype,
-            out.type.dtype,
-            a.type.layout,
-            b.type.layout,
-            out.type.layout,
-            arch,
-            num_threads,
-            builder,
+    (fun_forward, lto_forward) = build_dot(
+        M, N, K,
+        a.type.dtype, b.type.dtype, out.type.dtype,
+        a.type.layout, b.type.layout, out.type.layout,
+        arch, num_threads, builder,
+    )
+    if options["enable_backward"]:
+        (fun_backward_A, lto_backward_A) = build_dot(
+            M, K, N,
+            out.type.dtype, b.type.dtype, a.type.dtype,
+            out.type.layout, tile_flip_layout(b.type.layout), a.type.layout,
+            arch, num_threads, builder,
         )
-        if options["enable_backward"]:
-            # adjA += adjC * B^T - Transpose ~= flipped layout
-            (fun_backward_A, lto_backward_A) = warp._src.build.build_lto_dot(
-                M,
-                K,
-                N,
-                out.type.dtype,
-                b.type.dtype,
-                a.type.dtype,
-                out.type.layout,
-                tile_flip_layout(b.type.layout),
-                a.type.layout,
-                arch,
-                num_threads,
-                builder,
-            )
-            # adjB += A^T * adjC - Transpose ~= flipped layout
-            (fun_backward_B, lto_backward_B) = warp._src.build.build_lto_dot(
-                K,
-                N,
-                M,
-                a.type.dtype,
-                out.type.dtype,
-                b.type.dtype,
-                tile_flip_layout(a.type.layout),
-                out.type.layout,
-                b.type.layout,
-                arch,
-                num_threads,
-                builder,
-            )
-        else:
-            # adjoints aren't computed, so we reuse fun_forward as a dummy arg
-            (fun_backward_A, lto_backward_A) = (fun_forward, None)
-            (fun_backward_B, lto_backward_B) = (fun_forward, None)
-
-        return (
-            (
-                Var(fun_forward, str, False, True, False),
-                Var(fun_backward_A, str, False, True, False),
-                Var(fun_backward_B, str, False, True, False),
-                a,
-                b,
-                out,
-                alpha,
-                beta,
-            ),
-            (),
-            [lto_forward, lto_backward_A, lto_backward_B],
-            0,
+        (fun_backward_B, lto_backward_B) = build_dot(
+            K, N, M,
+            a.type.dtype, out.type.dtype, b.type.dtype,
+            tile_flip_layout(a.type.layout), out.type.layout, b.type.layout,
+            arch, num_threads, builder,
         )
+    else:
+        (fun_backward_A, lto_backward_A) = (fun_forward, None)
+        (fun_backward_B, lto_backward_B) = (fun_forward, None)
+
+    return (
+        (
+            Var(fun_forward, str, False, True, False),
+            Var(fun_backward_A, str, False, True, False),
+            Var(fun_backward_B, str, False, True, False),
+            a,
+            b,
+            out,
+            alpha,
+            beta,
+        ),
+        (),
+        [lto_forward, lto_backward_A, lto_backward_B],
+        0,
+    )
 
 
 add_builtin(

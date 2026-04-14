@@ -493,6 +493,76 @@ def build_lto_dot(M, N, K, adtype, bdtype, cdtype, alayout, blayout, clayout, ar
     return lto_symbol, lto_code_data
 
 
+def _ck_stride(M, N, K, arrangement, matrix):
+    """Compute compile-time strides for CK GEMM based on matrix role and layout."""
+    if matrix == "A":  # M x K
+        return (K, 1) if arrangement == 1 else (1, M)  # rowmajor vs colmajor
+    elif matrix == "B":  # K x N
+        return (N, 1) if arrangement == 1 else (1, K)
+    else:  # C: M x N
+        return (N, 1) if arrangement == 1 else (1, M)
+
+
+def build_ck_dot(M, N, K, adtype, bdtype, cdtype, alayout, blayout, clayout, arch, num_threads, builder):
+    """Generate a CK MFMA GEMM device function for hipRTC compilation.
+
+    Instead of producing LTOIR binary data (like build_lto_dot for CUDA),
+    this generates a full device function definition that gets embedded
+    in the kernel source code.
+    """
+    from warp.types import float16, float32, float64, vec2h, vec2f, vec2d
+
+    def ck_type_map(dtype):
+        if dtype == float16:
+            return ("wp::float16", 0)
+        if dtype == float32:
+            return ("wp::float32", 0)
+        if dtype == float64:
+            return ("wp::float64", 0)
+        if dtype == vec2h:
+            return ("wp::vec2h", 1)
+        if dtype == vec2f:
+            return ("wp::vec2f", 1)
+        if dtype == vec2d:
+            return ("wp::vec2d", 1)
+        raise TypeError("Unsupported input type in tile_matmul")
+
+    def ck_arrangement_map(layout):
+        if layout == "colmajor":
+            return 0
+        if layout == "rowmajor":
+            return 1
+        raise ValueError("Unsupported layout in tile_matmul")
+
+    (c_dtype, c_type) = ck_type_map(cdtype)
+    (a_dtype, _) = ck_type_map(adtype)
+    (b_dtype, _) = ck_type_map(bdtype)
+    a_arrangement = ck_arrangement_map(alayout)
+    b_arrangement = ck_arrangement_map(blayout)
+    c_arrangement = ck_arrangement_map(clayout)
+
+    ck_symbol = f"ck_dot_{M}_{N}_{K}_{num_threads}_{a_arrangement}_{b_arrangement}_{c_arrangement}"
+
+    if ck_symbol in builder.ltoirs_decl:
+        return ck_symbol, None
+
+    sa0, sa1 = _ck_stride(M, N, K, a_arrangement, "A")
+    sb0, sb1 = _ck_stride(M, N, K, b_arrangement, "B")
+    sc0, sc1 = _ck_stride(M, N, K, c_arrangement, "C")
+
+    func_def = (
+        f"__device__ void {ck_symbol}("
+        f"{c_dtype}* alpha, {a_dtype}* A, {b_dtype}* B, {c_dtype}* beta, {c_dtype}* C) {{\n"
+        f"    ck_gemm::block_gemm<{c_dtype}, {M}, {N}, {K}, "
+        f"{sa0}, {sa1}, {sb0}, {sb1}, {sc0}, {sc1}>"
+        f"(alpha, A, B, beta, C);\n"
+        f"}}"
+    )
+
+    builder.ltoirs_decl[ck_symbol] = func_def
+    return ck_symbol, None
+
+
 def build_lto_solver(
     M,
     N,
