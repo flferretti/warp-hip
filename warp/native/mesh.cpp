@@ -268,7 +268,7 @@ void wp_mesh_set_velocities_host(uint64_t id, wp::array_t<wp::vec3> velocities)
 }
 
 // stubs for non-CUDA platforms
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 
 
 WP_API uint64_t wp_mesh_create_device(

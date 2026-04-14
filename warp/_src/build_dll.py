@@ -570,10 +570,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
     hip_enabled = getattr(args, 'hip', False) and cu_paths is not None
     ck_enabled = getattr(args, 'ck', False) and hip_enabled
     if hip_enabled:
-        # Set WP_ENABLE_CUDA=1 for .cpp files so that device-function stubs
-        # (guarded by #if !WP_ENABLE_CUDA) are suppressed -- the real
-        # implementations come from .cu files compiled by hipcc.
-        cuda_enabled = "WP_ENABLE_CUDA=1"
+        cuda_enabled = "WP_ENABLE_CUDA=0"
         hip_define = "WP_ENABLE_HIP=1"
     else:
         cuda_enabled = "WP_ENABLE_CUDA=1" if (cu_paths is not None) else "WP_ENABLE_CUDA=0"
@@ -723,6 +720,9 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
                 version = ""
 
         cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -DWP_ENABLE_HIP=0 -DWP_ENABLE_CK=0 -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
+
+        if hip_enabled:
+            cpp_flags += "-DWP_ENABLE_GPU=1 "
 
         if mode == "debug":
             cpp_flags += "-O0 -g -D_DEBUG -DWP_ENABLE_DEBUG=1 -fkeep-inline-functions"

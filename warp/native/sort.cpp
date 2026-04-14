@@ -166,7 +166,7 @@ void segmented_sort_pairs_host(
 }
 
 
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 
 void radix_sort_reserve(void* context, int n, void** mem_out, size_t* size_out) { }
 

@@ -1019,7 +1019,7 @@ void wp_cubql_bvh_destroy_host(uint64_t id)
 
 
 // stubs for non-CUDA platforms
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 
 uint64_t wp_bvh_create_device(
     void* context, wp::vec3* lowers, wp::vec3* uppers, int num_items, int constructor_type, int* groups, int leaf_size

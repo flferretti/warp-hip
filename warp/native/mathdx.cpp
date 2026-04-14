@@ -4,7 +4,7 @@
 #include "builtin.h"
 
 // stubs for platforms where there is no CUDA
-#if !WP_ENABLE_CUDA || !WP_ENABLE_MATHDX
+#if (!WP_ENABLE_CUDA && !WP_ENABLE_GPU) || !WP_ENABLE_MATHDX
 
 extern "C" {
 

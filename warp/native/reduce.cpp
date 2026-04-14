@@ -134,7 +134,7 @@ void wp_array_sum_double_host(uint64_t a, uint64_t out, int count, int byte_stri
     array_sum_host(ptr_a, ptr_out, count, byte_stride_a, type_length);
 }
 
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 void wp_array_inner_float_device(
     uint64_t a, uint64_t b, uint64_t out, int count, int byte_stride_a, int byte_stride_b, int type_length
 )

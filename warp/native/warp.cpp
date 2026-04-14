@@ -859,7 +859,7 @@ WP_API void wp_array_fill_host(void* arr_ptr, int arr_type, const void* value_pt
 
 
 // stubs for platforms where there is no CUDA
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 
 void* wp_alloc_pinned(size_t s)
 {

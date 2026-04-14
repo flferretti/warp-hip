@@ -464,7 +464,7 @@ void wp_hash_grid_reserve_device(uint64_t id, int type, int num_points)
 // Stub implementations when CUDA is disabled
 // =============================================================================
 
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 
 namespace wp {
 

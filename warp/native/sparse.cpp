@@ -201,7 +201,7 @@ WP_API void wp_bsr_transpose_host(
     std::partial_sum(transposed_bsr_offsets, transposed_bsr_offsets + col_count + 1, transposed_bsr_offsets);
 }
 
-#if !WP_ENABLE_CUDA
+#if !WP_ENABLE_CUDA && !WP_ENABLE_GPU
 WP_API void wp_bsr_matrix_from_triplets_device(
     int block_size,
     int scalar_size_in_bytes,
