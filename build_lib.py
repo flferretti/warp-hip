@@ -361,6 +361,12 @@ def main(argv: list[str] | None = None) -> int:
         default=False,
         help="Fast build mode: compile for minimal GPU architectures (PTX-only for sm_75), disable CUDA forward compatibility",
     )
+    group_build.add_argument(
+        "--hip",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Build with AMD HIP/ROCm support instead of CUDA (mutually exclusive with --cuda)",
+    )
 
     # Clang/LLVM options
     group_clang_llvm = parser.add_argument_group(
@@ -405,8 +411,13 @@ def main(argv: list[str] | None = None) -> int:
         print("  Use --build-llvm to build LLVM from source")
         return 1
 
+    # Validate --hip conflicts
+    if args.hip and args.cuda:
+        print("Error: --hip and --cuda are mutually exclusive. Use --no-cuda --hip for HIP builds.")
+        return 1
+
     # Validate --no-cuda conflicts
-    if not args.cuda:
+    if not args.cuda and not args.hip:
         if args.cuda_path:
             print("Error: --no-cuda and --cuda-path are mutually exclusive.")
             return 1
@@ -445,8 +456,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Warp build error: {e}")
             return 1
 
-    # setup CUDA Toolkit path
-    if platform.system() == "Darwin" or not args.cuda:
+    # setup CUDA/HIP Toolkit path
+    if args.hip:
+        print("Building with HIP/ROCm support")
+        args.cuda_path = None
+        args.libmathdx_path = None
+        if not hasattr(args, "rocm_path") or not args.rocm_path:
+            args.rocm_path = os.environ.get("ROCM_PATH", "/opt/rocm")
+    elif platform.system() == "Darwin" or not args.cuda:
         if not args.cuda:
             print("CUDA support disabled (--no-cuda)")
         args.cuda_path = None
@@ -524,9 +541,11 @@ def main(argv: list[str] | None = None) -> int:
             "native/coloring.cpp",
             "native/fastcall.cpp",
         ]
+        if args.hip:
+            cpp_sources.append("native/hip_util.cpp")
         warp_cpp_paths = [os.path.join(build_path, cpp) for cpp in cpp_sources]
 
-        if args.cuda_path is None:
+        if args.cuda_path is None and not args.hip:
             if args.cuda:
                 print("Warning: CUDA toolchain not found, building without CUDA support")
             warp_cu_paths = None
