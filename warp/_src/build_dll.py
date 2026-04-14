@@ -607,7 +607,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             iter_dbg = "_ITERATOR_DEBUG_LEVEL=2"
             debug = "_DEBUG"
 
-        cpp_flags = f'/nologo /std:c++17 /GR- /EHsc {runtime} /D "{debug}" /D "{cuda_enabled}" /D "{hip_define}" /D "{ck_define}" /D "{mathdx_enabled}" /D "{cuda_compat_enabled}" /D "{iter_dbg}" /I"{native_dir}" {includes} '
+        cpp_flags = f'/nologo /std:c++17 /GR- /EHsc {runtime} /D "{debug}" /D "{cuda_enabled}" /D "WP_ENABLE_HIP=0" /D "WP_ENABLE_CK=0" /D "{mathdx_enabled}" /D "{cuda_compat_enabled}" /D "{iter_dbg}" /I"{native_dir}" {includes} '
 
         if args.mode == "debug":
             cpp_flags += "/FS /Zi /Od /D WP_ENABLE_DEBUG=1"
@@ -719,7 +719,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             else:
                 version = ""
 
-        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -D{hip_define} -D{ck_define} -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
+        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -DWP_ENABLE_HIP=0 -DWP_ENABLE_CK=0 -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
 
         if mode == "debug":
             cpp_flags += "-O0 -g -D_DEBUG -DWP_ENABLE_DEBUG=1 -fkeep-inline-functions"

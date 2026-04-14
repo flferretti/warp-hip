@@ -10,6 +10,8 @@
 #include <set>
 #include <stack>
 
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 static bool hip_driver_initialized = false;
 
 bool ContextGuard::always_restore = false;
@@ -216,7 +218,7 @@ CUresult cuStreamWaitEvent_f(CUstream stream, CUevent event, unsigned int flags)
 
 CUresult cuStreamGetCtx_f(CUstream stream, CUcontext* pctx)
 {
-    return hipStreamGetCtx(stream, pctx);
+    return hipCtxGetCurrent(pctx);
 }
 
 CUresult cuStreamGetCaptureInfo_f(
@@ -353,13 +355,13 @@ CUresult cuGraphicsResourceGetMappedPointer_f(CUdeviceptr* pDevPtr, size_t* pSiz
 
 CUresult cuGraphicsGLRegisterBuffer_f(CUgraphicsResource* pCudaResource, unsigned int buffer, unsigned int flags)
 {
-    return hipGraphicsGLRegisterBuffer(pCudaResource, buffer, flags);
+    return static_cast<CUresult>(999);
 }
 
 CUresult cuGraphicsGLRegisterImage_f(
     CUgraphicsResource* pCudaResource, unsigned int image, unsigned int target, unsigned int flags)
 {
-    return hipGraphicsGLRegisterImage(pCudaResource, image, target, flags);
+    return static_cast<CUresult>(999);
 }
 
 CUresult cuGraphicsSubResourceGetMappedArray_f(

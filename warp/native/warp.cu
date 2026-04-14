@@ -30,6 +30,8 @@
 #define WP_ENABLE_CK 0
 #endif
 
+int wp_is_ck_enabled() { return int(WP_ENABLE_CK); }
+
 #include <algorithm>
 #include <array>
 #include <iterator>

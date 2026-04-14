@@ -147,11 +147,6 @@ int wp_is_cuda_compatibility_enabled() { return int(WP_ENABLE_CUDA_COMPATIBILITY
 
 int wp_is_mathdx_enabled() { return int(WP_ENABLE_MATHDX); }
 
-#ifndef WP_ENABLE_CK
-#define WP_ENABLE_CK 0
-#endif
-int wp_is_ck_enabled() { return int(WP_ENABLE_CK); }
-
 #ifdef WP_DISABLE_CUBQL
 int wp_is_cubql_enabled() { return 0; }
 #else
