@@ -759,6 +759,8 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             if cu_paths and hip_enabled:
                 rocm_path = getattr(args, 'rocm_path', '/opt/rocm')
                 hipcc_cmd = os.path.join(rocm_path, 'bin', 'hipcc')
+                if not os.path.isfile(hipcc_cmd):
+                    hipcc_cmd = shutil.which('hipcc') or hipcc_cmd
                 for cu_path in cu_paths:
                     cu_out = cu_path + _obj_tag + ".o"
                     if mode == "debug":
