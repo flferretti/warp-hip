@@ -769,8 +769,9 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
                         cuda_cmd = f'{hipcc_cmd} --std=c++17 -O3 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DNDEBUG -DWP_ENABLE_HIP=1 -DWP_ENABLE_CUDA=0 -D{ck_define} -I"{native_dir}" -D{mathdx_enabled} -o "{cu_out}" -c "{cu_path}"'
                     cuda_cmds.append(cuda_cmd)
                     ld_inputs.append(quote(cu_out))
+                hip_lib_path = os.environ.get('HIP_LIB_PATH', os.path.join(rocm_path, 'lib'))
                 ld_inputs.append(
-                    f'-L"{rocm_path}/lib" -lamdhip64 -lhiprtc -lpthread -ldl -lrt'
+                    f'-L"{hip_lib_path}" -lamdhip64 -lhiprtc -lpthread -ldl -lrt'
                 )
             elif cu_paths:
                 for cu_path in cu_paths:
