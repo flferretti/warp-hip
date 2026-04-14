@@ -94,12 +94,17 @@ typedef HIP_RESOURCE_VIEW_DESC  CUDA_RESOURCE_VIEW_DESC;
 
 typedef hipPointer_attribute CUpointer_attribute;
 #define CU_POINTER_ATTRIBUTE_CONTEXT        hipPointerAttributeContext
-#define CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE hipPointerAttributeMempoolHandle
+// Mempool handle attribute not available in HIP; define to an unused value
+// so error-detection code compiles but queries return NULL
+#define CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE 0
 
 #define CU_EVENT_DEFAULT        hipEventDefault
 #define CU_EVENT_DISABLE_TIMING hipEventDisableTiming
 #define CU_EVENT_BLOCKING_SYNC  hipEventBlockingSync
 #define CU_EVENT_WAIT_DEFAULT   0
+#define CU_EVENT_RECORD_DEFAULT  0
+#define CU_EVENT_RECORD_EXTERNAL 0
+#define CU_EVENT_WAIT_EXTERNAL   0
 
 #define CU_STREAM_DEFAULT       hipStreamDefault
 #define CU_STREAM_NON_BLOCKING  hipStreamNonBlocking
@@ -148,6 +153,7 @@ typedef hipMemPoolAttr               cudaMemPoolAttr;
 #define cudaMemPoolAttrUsedMemCurrent       hipMemPoolAttrUsedMemCurrent
 #define cudaMemPoolAttrUsedMemHigh          hipMemPoolAttrUsedMemHigh
 #define cudaMemAccessFlagsProtReadWrite     hipMemAccessFlagsProtReadWrite
+#define cudaMemAccessFlagsProtNone          hipMemAccessFlagsProtNone
 #define cudaMemLocationTypeDevice           hipMemLocationTypeDevice
 #define cudaMemAllocationTypePinned         hipMemAllocationTypePinned
 #define cudaMemHandleTypeNone               hipMemHandleTypeNone
@@ -157,13 +163,17 @@ typedef hipMemPoolAttr               cudaMemPoolAttr;
 #define cudaStreamEndCapture          hipStreamEndCapture
 #define cudaStreamIsCapturing         hipStreamIsCapturing
 #define cudaStreamCaptureModeGlobal   hipStreamCaptureModeGlobal
+#define cudaStreamCaptureModeThreadLocal hipStreamCaptureModeThreadLocal
 
 typedef hipStreamCaptureMode cudaStreamCaptureMode;
 
 #define cudaStreamSetCaptureDependencies   0
 #define cudaStreamAddCaptureDependencies   1
 
+#define CU_STREAM_ADD_CAPTURE_DEPENDENCIES hipStreamAddCaptureDependencies
+
 #define cudaGraphInstantiateWithFlags  hipGraphInstantiateWithFlags
+#define cudaGraphInstantiateFlagAutoFreeOnLaunch hipGraphInstantiateFlagAutoFreeOnLaunch
 #define cudaGraphLaunch               hipGraphLaunch
 #define cudaGraphUpload               hipGraphUpload
 #define cudaGraphDestroy              hipGraphDestroy
@@ -177,6 +187,9 @@ typedef hipStreamCaptureMode cudaStreamCaptureMode;
 #define cudaGraphAddMemFreeNode       hipGraphAddMemFreeNode
 #define cudaGraphRetainUserObject     hipGraphRetainUserObject
 #define cudaUserObjectCreate          hipUserObjectCreate
+
+#define cudaUserObjectNoDestructorSync hipUserObjectNoDestructorSync
+#define cudaGraphUserObjectMove        hipGraphUserObjectMove
 
 typedef hipGraphNode_t          cudaGraphNode_t;
 typedef hipGraph_t              cudaGraph_t;

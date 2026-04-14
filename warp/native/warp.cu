@@ -1906,7 +1906,7 @@ int wp_nvrtc_supported_arch_count()
 {
 #if WP_ENABLE_HIP
     int count = 0;
-    hipDeviceGetCount(&count);
+    cuDeviceGetCount_f(&count);
     return count;
 #else
     int count;
@@ -1923,17 +1923,15 @@ void wp_nvrtc_supported_archs(int* archs)
     if (archs)
     {
         int count = 0;
-        hipDeviceGetCount(&count);
+        cuDeviceGetCount_f(&count);
         for (int i = 0; i < count; i++)
         {
-            hipDeviceProp_t prop;
-            hipGetDeviceProperties(&prop, i);
-            // Parse numeric arch from gcnArchName (e.g. "gfx1150" -> 1150)
-            const char* p = prop.gcnArchName;
-            while (*p && (*p < '0' || *p > '9')) p++;
-            int arch = 0;
-            while (*p >= '0' && *p <= '9') { arch = arch * 10 + (*p - '0'); p++; }
-            archs[i] = arch;
+            CUdevice device;
+            cuDeviceGet_f(&device, i);
+            int major = 0, minor = 0;
+            cuDeviceGetAttribute_f(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
+            cuDeviceGetAttribute_f(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
+            archs[i] = 10 * major + minor;
         }
     }
 #else
@@ -4686,7 +4684,7 @@ void wp_cuda_graphics_device_ptr_and_size(void* context, void* resource, uint64_
     size_t bytes;
     check_cu(cuGraphicsResourceGetMappedPointer_f(&device_ptr, &bytes, *(CUgraphicsResource*)resource));
 
-    *ptr = device_ptr;
+    *ptr = reinterpret_cast<uint64_t>(device_ptr);
     *size = bytes;
 }
 
