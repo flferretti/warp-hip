@@ -22,20 +22,15 @@
 #endif  // __clang__
 
 // Check if the CUDA toolkit is available
-#if WP_ENABLE_CUDA || defined(__CUDACC_RTC__) || (defined(__clang__) && defined(__CUDA__))
-
-// NVRTC has built-in float4; Clang CUDA JIT defines it in cuda_crt.h
 #if defined(__CUDACC_RTC__) || (defined(__clang__) && defined(__CUDA__))
-// float4 already available
-#else
-// NVCC: Include vector_types.h to get float4
+// NVRTC / Clang CUDA JIT: float4 already available
+#elif defined(__CUDACC__)
+// NVCC: include cuda_runtime.h to get float4
 #include <cuda_runtime.h>
-#endif
-
 #elif defined(__HIPCC__)
 // HIP: float4 already defined by hip_runtime.h
 #else
-// If CUDA is not available (e.g., macOS build), manually define float4
+// Host-only or no GPU compiler: manually define float4
 struct alignas(16) float4 {
     float x, y, z, w;
 };
