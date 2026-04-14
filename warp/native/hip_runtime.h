@@ -179,7 +179,7 @@ inline hipError_t cudaGraphSetConditional(void*, unsigned int)
     return hipErrorNotSupported;
 }
 
-typedef uint64_t cuuint64_t;
+typedef unsigned long long cuuint64_t;
 
 typedef int CUjit_option;
 #define CU_JIT_ERROR_LOG_BUFFER            0
