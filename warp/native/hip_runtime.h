@@ -40,12 +40,17 @@ typedef hipError_t      CUresult;
 #define CUDA_ERROR_OUT_OF_MEMORY         hipErrorOutOfMemory
 #define CUDA_ERROR_NOT_FOUND             hipErrorNotFound
 #define CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED hipErrorPeerAccessAlreadyEnabled
+#define CUDA_ERROR_PEER_ACCESS_NOT_ENABLED    hipErrorPeerAccessNotEnabled
 
 typedef hipError_t      cudaError_t;
 #define cudaSuccess     hipSuccess
+#define cudaErrorInvalidValue hipErrorInvalidValue
 
 typedef hipStream_t     cudaStream_t;
 typedef hipEvent_t      cudaEvent_t;
+typedef hipStreamCaptureStatus cudaStreamCaptureStatus;
+#define cudaStreamCaptureStatusNone   hipStreamCaptureStatusNone
+#define cudaStreamCaptureStatusActive hipStreamCaptureStatusActive
 
 typedef hipDeviceAttribute_t CUdevice_attribute;
 #define CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID              hipDeviceAttributePciDomainID
@@ -57,12 +62,16 @@ typedef hipDeviceAttribute_t CUdevice_attribute;
 #define CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT       hipDeviceAttributeMultiprocessorCount
 #define CU_DEVICE_ATTRIBUTE_INTEGRATED                 hipDeviceAttributeIntegrated
 #define CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK hipDeviceAttributeMaxSharedMemoryPerBlock
+#define CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED     hipDeviceAttributeMemoryPoolsSupported
+#define CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN hipDeviceAttributeMaxSharedMemoryPerBlock
 
 #define cudaMemcpyHostToHost     hipMemcpyHostToHost
 #define cudaMemcpyHostToDevice   hipMemcpyHostToDevice
 #define cudaMemcpyDeviceToHost   hipMemcpyDeviceToHost
 #define cudaMemcpyDeviceToDevice hipMemcpyDeviceToDevice
 #define cudaMemcpyDefault        hipMemcpyDefault
+
+typedef hipMemcpyKind cudaMemcpyKind;
 
 typedef hipUUID CUuuid;
 
@@ -84,17 +93,22 @@ typedef HIP_TEXTURE_DESC        CUDA_TEXTURE_DESC;
 typedef HIP_RESOURCE_VIEW_DESC  CUDA_RESOURCE_VIEW_DESC;
 
 typedef hipPointer_attribute CUpointer_attribute;
-#define CU_POINTER_ATTRIBUTE_CONTEXT hipPointerAttributeContext
+#define CU_POINTER_ATTRIBUTE_CONTEXT        hipPointerAttributeContext
+#define CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE hipPointerAttributeMempoolHandle
 
 #define CU_EVENT_DEFAULT        hipEventDefault
 #define CU_EVENT_DISABLE_TIMING hipEventDisableTiming
 #define CU_EVENT_BLOCKING_SYNC  hipEventBlockingSync
+#define CU_EVENT_WAIT_DEFAULT   0
 
 #define CU_STREAM_DEFAULT       hipStreamDefault
 #define CU_STREAM_NON_BLOCKING  hipStreamNonBlocking
 
 typedef hipIpcMemHandle_t   CUipcMemHandle;
 typedef hipIpcEventHandle_t CUipcEventHandle;
+
+#define CU_IPC_HANDLE_SIZE                 64
+#define CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS hipIpcMemLazyEnablePeerAccess
 
 #define CU_CTX_SCHED_AUTO 0
 
@@ -131,6 +145,8 @@ typedef hipMemLocationType           cudaMemLocationType;
 typedef hipMemPoolAttr               cudaMemPoolAttr;
 
 #define cudaMemPoolAttrReleaseThreshold     hipMemPoolAttrReleaseThreshold
+#define cudaMemPoolAttrUsedMemCurrent       hipMemPoolAttrUsedMemCurrent
+#define cudaMemPoolAttrUsedMemHigh          hipMemPoolAttrUsedMemHigh
 #define cudaMemAccessFlagsProtReadWrite     hipMemAccessFlagsProtReadWrite
 #define cudaMemLocationTypeDevice           hipMemLocationTypeDevice
 #define cudaMemAllocationTypePinned         hipMemAllocationTypePinned
@@ -197,6 +213,8 @@ typedef hipGraphicsResource_t CUgraphicsResource;
 typedef size_t (*CUoccupancyB2DSize)(int);
 
 #define cudaErrorCallRequiresNewerDriver hipErrorNotSupported
+
+#define CUDART_CB
 
 // NVRTC-to-hipRTC compatibility
 typedef hiprtcResult   nvrtcResult;

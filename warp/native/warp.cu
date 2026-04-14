@@ -1928,7 +1928,12 @@ void wp_nvrtc_supported_archs(int* archs)
         {
             hipDeviceProp_t prop;
             hipGetDeviceProperties(&prop, i);
-            archs[i] = prop.gcnArch;
+            // Parse numeric arch from gcnArchName (e.g. "gfx1150" -> 1150)
+            const char* p = prop.gcnArchName;
+            while (*p && (*p < '0' || *p > '9')) p++;
+            int arch = 0;
+            while (*p >= '0' && *p <= '9') { arch = arch * 10 + (*p - '0'); p++; }
+            archs[i] = arch;
         }
     }
 #else
