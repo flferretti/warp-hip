@@ -570,7 +570,10 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
     hip_enabled = getattr(args, 'hip', False) and cu_paths is not None
     ck_enabled = getattr(args, 'ck', False) and hip_enabled
     if hip_enabled:
-        cuda_enabled = "WP_ENABLE_CUDA=0"
+        # Set WP_ENABLE_CUDA=1 for .cpp files so that device-function stubs
+        # (guarded by #if !WP_ENABLE_CUDA) are suppressed -- the real
+        # implementations come from .cu files compiled by hipcc.
+        cuda_enabled = "WP_ENABLE_CUDA=1"
         hip_define = "WP_ENABLE_HIP=1"
     else:
         cuda_enabled = "WP_ENABLE_CUDA=1" if (cu_paths is not None) else "WP_ENABLE_CUDA=0"
