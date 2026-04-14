@@ -205,7 +205,7 @@ bool check_cu_result(CUresult result, const char* func, const char* file, int li
 inline uint64_t get_capture_id(CUstream stream)
 {
     CUstreamCaptureStatus status;
-    uint64_t id = 0;
+    cuuint64_t id = 0;
     check_cu(cuStreamGetCaptureInfo_f(stream, &status, &id, NULL, NULL, NULL));
     return id;
 }
