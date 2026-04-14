@@ -143,6 +143,9 @@ typedef hipMemPoolAttr               cudaMemPoolAttr;
 
 typedef hipStreamCaptureMode cudaStreamCaptureMode;
 
+#define cudaStreamSetCaptureDependencies   0
+#define cudaStreamAddCaptureDependencies   1
+
 #define cudaGraphInstantiateWithFlags  hipGraphInstantiateWithFlags
 #define cudaGraphLaunch               hipGraphLaunch
 #define cudaGraphUpload               hipGraphUpload
@@ -193,6 +196,29 @@ typedef hipGraphicsResource_t CUgraphicsResource;
 typedef size_t (*CUoccupancyB2DSize)(int);
 
 #define cudaErrorCallRequiresNewerDriver hipErrorNotSupported
+
+// NVRTC-to-hipRTC compatibility
+typedef hiprtcResult   nvrtcResult;
+typedef hiprtcProgram  nvrtcProgram;
+
+#define NVRTC_SUCCESS                  HIPRTC_SUCCESS
+#define nvrtcGetErrorString            hiprtcGetErrorString
+#define nvrtcVersion                   hiprtcVersion
+#define nvrtcCreateProgram             hiprtcCreateProgram
+#define nvrtcDestroyProgram            hiprtcDestroyProgram
+#define nvrtcCompileProgram            hiprtcCompileProgram
+#define nvrtcGetProgramLogSize         hiprtcGetProgramLogSize
+#define nvrtcGetProgramLog             hiprtcGetProgramLog
+#define nvrtcGetCodeSize               hiprtcGetCodeSize
+#define nvrtcGetCode                   hiprtcGetCode
+#define nvrtcGetBitcodeSize            hiprtcGetBitcodeSize
+#define nvrtcGetBitcode                hiprtcGetBitcode
+
+// hipRTC produces native code directly (no PTX/cubin distinction)
+#define nvrtcGetPTXSize                hiprtcGetCodeSize
+#define nvrtcGetPTX                    hiprtcGetCode
+#define nvrtcGetCUBINSize              hiprtcGetCodeSize
+#define nvrtcGetCUBIN                  hiprtcGetCode
 
 // Sentinel so that #if CUDA_VERSION >= XXXX guards evaluate to false
 #define CUDA_VERSION 0

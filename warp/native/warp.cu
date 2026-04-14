@@ -11,8 +11,13 @@
 #include <cstdlib>
 #include <fstream>
 
+#if WP_ENABLE_HIP
+#include <hip/hiprtc.h>
+#else
 #include <nvPTXCompiler.h>
 #include <nvrtc.h>
+#endif
+
 #if WP_ENABLE_MATHDX
 #include <libcublasdx.h>
 #include <libcufftdx.h>
@@ -82,10 +87,15 @@ bool check_nvrtc_result(nvrtcResult result, const char* file, int line)
         return true;
 
     const char* error_string = nvrtcGetErrorString(result);
+#if WP_ENABLE_HIP
+    fprintf(stderr, "Warp hipRTC compilation error %u: %s (%s:%d)\n", unsigned(result), error_string, file, line);
+#else
     fprintf(stderr, "Warp NVRTC compilation error %u: %s (%s:%d)\n", unsigned(result), error_string, file, line);
+#endif
     return false;
 }
 
+#if !WP_ENABLE_HIP
 bool check_nvptx_result(nvPTXCompileResult result, const char* file, int line)
 {
     if (result == NVPTXCOMPILE_SUCCESS)
@@ -122,6 +132,7 @@ bool check_nvptx_result(nvPTXCompileResult result, const char* file, int line)
     fprintf(stderr, "Warp PTX compilation error %u: %s (%s:%d)\n", unsigned(result), error_string, file, line);
     return false;
 }
+#endif // !WP_ENABLE_HIP
 
 bool check_generic(int result, const char* file, int line)
 {
@@ -1887,18 +1898,38 @@ bool wp_cuda_driver_is_initialized() { return is_cuda_driver_initialized(); }
 
 int wp_nvrtc_supported_arch_count()
 {
+#if WP_ENABLE_HIP
+    int count = 0;
+    hipDeviceGetCount(&count);
+    return count;
+#else
     int count;
     if (check_nvrtc(nvrtcGetNumSupportedArchs(&count)))
         return count;
     else
         return 0;
+#endif
 }
 
 void wp_nvrtc_supported_archs(int* archs)
 {
+#if WP_ENABLE_HIP
+    if (archs)
+    {
+        int count = 0;
+        hipDeviceGetCount(&count);
+        for (int i = 0; i < count; i++)
+        {
+            hipDeviceProp_t prop;
+            hipGetDeviceProperties(&prop, i);
+            archs[i] = prop.gcnArch;
+        }
+    }
+#else
     if (archs) {
         check_nvrtc(nvrtcGetSupportedArchs(archs));
     }
+#endif
 }
 
 int wp_cuda_device_get_count()
@@ -3791,6 +3822,11 @@ size_t wp_cuda_compile_program(
     char arch_opt[max_arch];
     char arch_opt_lto[max_arch];
 
+#if WP_ENABLE_HIP
+    (void)arch_suffix;
+    snprintf(arch_opt, max_arch, "--gpu-architecture=gfx%d", arch);
+    arch_opt_lto[0] = '\0';
+#else
     // arch_suffix is "" (no suffix), "a" (arch-specific), or "f" (family-specific)
     const char* suffix = (arch_suffix != nullptr) ? arch_suffix : "";
 
@@ -3801,6 +3837,7 @@ size_t wp_cuda_compile_program(
         snprintf(arch_opt, max_arch, "--gpu-architecture=sm_%d%s", arch, suffix);
         snprintf(arch_opt_lto, max_arch, "-arch=sm_%d%s", arch, suffix);
     }
+#endif
 
     std::vector<const char*> opts;
     opts.push_back(arch_opt);
@@ -3884,6 +3921,7 @@ size_t wp_cuda_compile_program(
         opts.push_back(stored_options.back().c_str());
     }
 
+#if !WP_ENABLE_HIP
     opts.push_back("--device-as-default-execution-space");
     opts.push_back("--extra-device-vectorization");
     opts.push_back("--restrict");
@@ -3904,6 +3942,9 @@ size_t wp_cuda_compile_program(
         fprintf(stderr, "Warp warning: CUDA version is less than 12.8, compile_time_trace is not supported\n");
 #endif
     }
+#else
+    (void)compile_time_trace;
+#endif
 
     nvrtcProgram prog;
     nvrtcResult res;
@@ -3951,6 +3992,11 @@ size_t wp_cuda_compile_program(
     nvrtcResult (*get_output_size)(nvrtcProgram, size_t*);
     nvrtcResult (*get_output_data)(nvrtcProgram, char*);
     const char* output_mode;
+#if WP_ENABLE_HIP
+    get_output_size = hiprtcGetCodeSize;
+    get_output_data = hiprtcGetCode;
+    output_mode = "wb";
+#else
     if (num_ltoirs > 0) {
 #if WP_ENABLE_MATHDX
         get_output_size = nvrtcGetLTOIRSize;
@@ -3969,6 +4015,7 @@ size_t wp_cuda_compile_program(
         get_output_data = nvrtcGetCUBIN;
         output_mode = "wb";
     }
+#endif // !WP_ENABLE_HIP
 
     // save output
     size_t output_size;
@@ -4391,6 +4438,10 @@ void* wp_cuda_load_module(void* context, const char* path)
     CUmodule module = NULL;
 
     if (load_ptx) {
+#if WP_ENABLE_HIP
+        fprintf(stderr, "Warp error: PTX loading not supported on HIP\n");
+        return NULL;
+#else
         if (check_cu(cuDriverGetVersion_f(&driver_cuda_version)) && driver_cuda_version >= CUDA_VERSION) {
             // let the driver compile the PTX
 
@@ -4453,10 +4504,11 @@ void* wp_cuda_load_module(void* context, const char* path)
                 return NULL;
             }
         }
+#endif // !WP_ENABLE_HIP
     } else {
-        // load CUBIN
+        // load native binary
         if (!check_cu(cuModuleLoadDataEx_f(&module, input.data(), 0, NULL, NULL))) {
-            fprintf(stderr, "Warp CUDA error: Loading module failed\n");
+            fprintf(stderr, "Warp error: Loading module failed\n");
             return NULL;
         }
     }
