@@ -5,19 +5,23 @@
 
 #include "builtin.h"
 
-#if WP_ENABLE_CUDA
+#if WP_ENABLE_CUDA || WP_ENABLE_HIP
 
 #include <vector>
 
+#if WP_ENABLE_HIP
+#include "hip_runtime.h"
+#else
 #include <cudaTypedefs.h>
 #include <cuda_runtime_api.h>
+#endif
 #include <stdio.h>
 
 #define check_cuda(code) (check_cuda_result(code, __FUNCTION__, __FILE__, __LINE__))
 #define check_cu(code) (check_cu_result(code, __FUNCTION__, __FILE__, __LINE__))
 
 
-#if defined(__CUDACC__)
+#if defined(__CUDACC__) || defined(__HIPCC__)
 #if _DEBUG
 // helper for launching kernels (synchronize + error checking after each kernel)
 #define wp_launch_device(context, kernel, dim, args) { \
@@ -42,7 +46,7 @@
         kernel<<<num_blocks, 256, 0, stream>>>args; \
         end_cuda_range(WP_TIMING_KERNEL_BUILTIN, stream); }}
 #endif  // _DEBUG
-#endif  // defined(__CUDACC__)
+#endif  // defined(__CUDACC__) || defined(__HIPCC__)
 
 
 CUresult cuDriverGetVersion_f(int* version);
@@ -359,7 +363,7 @@ public:
     }
 };
 
-#endif  // WP_ENABLE_CUDA
+#endif  // WP_ENABLE_CUDA || WP_ENABLE_HIP
 
 // Pass this value to device functions as the `context` parameter to bypass unnecessary context management.
 // This works in conjunction with ContextGuards, which do nothing if the given context is NULL.

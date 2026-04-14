@@ -13,9 +13,12 @@
 #define __restrict__ __restrict
 #endif
 
-#if !defined(__CUDACC__)
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
 #define CUDA_CALLABLE
 #define CUDA_CALLABLE_DEVICE
+#elif defined(__HIPCC__)
+#define CUDA_CALLABLE __host__ __device__
+#define CUDA_CALLABLE_DEVICE __device__
 #else
 #define CUDA_CALLABLE __host__ __device__
 #define CUDA_CALLABLE_DEVICE __device__
@@ -63,7 +66,9 @@
 __device__ inline void __debugbreak() { __brkpt(); }
 #endif
 
-#if defined(__clang__) && defined(__CUDA__) && !defined(WP_NO_CRT)
+#if defined(__HIPCC__) && !defined(WP_NO_CRT)
+#include <hip/hip_fp16.h>
+#elif defined(__clang__) && defined(__CUDA__) && !defined(WP_NO_CRT)
 // clang compiling CUDA code, host and device (NOTE: Used when building core library with Clang).
 // Excluded for JIT-compiled kernels (WP_NO_CRT) where cuda_crt.h provides __half.
 #include <cuda_fp16.h>
@@ -170,7 +175,7 @@ static_assert(sizeof(half) == 2, "Size of half / float16 type must be 2-bytes");
 typedef half float16;
 
 // Approximate division/reciprocal intrinsics
-#if defined(__CUDA_ARCH__)
+#if defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
 
 inline __device__ float approx_rcp(float a)
 {
@@ -209,6 +214,15 @@ inline __device__ float16 approx_div(float16 a, float16 b)
     return float16(approx_div(float(a), float(b)));  // No approx PTX for f16; use fp32 approx div
 }
 
+#elif defined(__HIP_DEVICE_COMPILE__)
+
+inline __device__ float approx_rcp(float a) { return __frcp_rn(a); }
+inline __device__ double approx_rcp(double a) { return __drcp_rn(a); }
+inline __device__ float16 approx_rcp(float16 a) { return float16(approx_rcp(float(a))); }
+inline __device__ float approx_div(float a, float b) { return __fdiv_rn(a, b); }
+inline __device__ double approx_div(double a, double b) { return __ddiv_rn(a, b); }
+inline __device__ float16 approx_div(float16 a, float16 b) { return float16(approx_div(float(a), float(b))); }
+
 #else
 
 // CPU fallbacks: exact division
@@ -221,7 +235,7 @@ inline CUDA_CALLABLE float16 approx_div(float16 a, float16 b) { return float16(f
 
 #endif
 
-#if defined(__CUDA_ARCH__)
+#if defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
 
 CUDA_CALLABLE inline half float_to_half(float x)
 {
@@ -237,7 +251,7 @@ CUDA_CALLABLE inline float half_to_float(half x)
     return val;
 }
 
-#elif defined(__clang__)
+#elif defined(__HIP_DEVICE_COMPILE__) || defined(__clang__)
 
 // _Float16 is Clang's native half-precision floating-point type
 CUDA_CALLABLE inline half float_to_half(float x)
@@ -1499,10 +1513,13 @@ template <> inline CUDA_CALLABLE int64 atomic_add(int64* buf, int64 value)
 
 template <> inline CUDA_CALLABLE float16 atomic_add(float16* buf, float16 value)
 {
-#if !defined(__CUDA_ARCH__)
+#if !defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
     float16 old = buf[0];
     buf[0] += value;
     return old;
+#elif defined(__HIP_DEVICE_COMPILE__)
+    __half r = atomicAdd(reinterpret_cast<__half*>(buf), *reinterpret_cast<__half*>(&value));
+    return *reinterpret_cast<float16*>(&r);
 #else  // CUDA compiled by NVRTC
 #if __CUDA_ARCH__ >= 700
 #if defined(__clang__)  // CUDA compiled by Clang
@@ -1533,10 +1550,12 @@ template <> inline CUDA_CALLABLE float16 atomic_add(float16* buf, float16 value)
 
 template <> inline CUDA_CALLABLE float64 atomic_add(float64* buf, float64 value)
 {
-#if !defined(__CUDA_ARCH__)
+#if !defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
     float64 old = buf[0];
     buf[0] += value;
     return old;
+#elif defined(__HIP_DEVICE_COMPILE__)
+    return atomicAdd(buf, value);
 #elif defined(__clang__)  // CUDA compiled by Clang
     return atomicAdd(buf, value);
 #else  // CUDA compiled by NVRTC
