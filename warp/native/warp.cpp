@@ -1114,5 +1114,6 @@ WP_API void wp_cuda_timing_end(timing_result_t* results, int size) { }
 
 WP_API const char* wp_libmathdx_version() { return ""; }
 WP_API int wp_nvrtc_version() { return 0; }
+WP_API int wp_is_ck_enabled() { return 0; }
 
-#endif  // !WP_ENABLE_CUDA
+#endif  // !WP_ENABLE_CUDA && !WP_ENABLE_GPU

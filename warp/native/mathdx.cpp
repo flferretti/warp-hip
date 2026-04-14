@@ -76,8 +76,6 @@ WP_API bool wp_cuda_compile_solver(
     return false;
 }
 
-WP_API int wp_is_ck_enabled() { return 0; }
-
 }  // extern "C"
 
 #endif  // !WP_ENABLE_CUDA || !WP_ENABLE_MATHDX
