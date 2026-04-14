@@ -94,9 +94,9 @@ typedef HIP_RESOURCE_VIEW_DESC  CUDA_RESOURCE_VIEW_DESC;
 
 typedef hipPointer_attribute CUpointer_attribute;
 #define CU_POINTER_ATTRIBUTE_CONTEXT        hipPointerAttributeContext
-// Mempool handle attribute not available in HIP; define to an unused value
+// Mempool handle attribute not available in HIP; define to an unused enum value
 // so error-detection code compiles but queries return NULL
-#define CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE 0
+#define CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE static_cast<CUpointer_attribute>(0)
 
 #define CU_EVENT_DEFAULT        hipEventDefault
 #define CU_EVENT_DISABLE_TIMING hipEventDisableTiming
