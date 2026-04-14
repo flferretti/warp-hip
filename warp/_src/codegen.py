@@ -4137,7 +4137,7 @@ cuda_module_header = """
 #include "builtin.h"
 
 // Map wp.breakpoint() to a device brkpt at the call site so cuda-gdb attributes the stop to the generated .cu line
-#if defined(__CUDACC__) && !defined(_MSC_VER)
+#if (defined(__CUDACC__) || defined(__HIPCC__)) && !defined(_MSC_VER)
 #define __debugbreak() __brkpt()
 #endif
 
