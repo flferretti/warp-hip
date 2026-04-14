@@ -1519,8 +1519,23 @@ template <> inline CUDA_CALLABLE float16 atomic_add(float16* buf, float16 value)
     buf[0] += value;
     return old;
 #elif defined(__HIP_DEVICE_COMPILE__)
-    __half r = atomicAdd(reinterpret_cast<__half*>(buf), *reinterpret_cast<__half*>(&value));
-    return *reinterpret_cast<float16*>(&r);
+    // CAS-based half-precision atomicAdd (no native __half atomicAdd in HIP)
+    __half hval = *reinterpret_cast<const __half*>(&value);
+    unsigned int* addr = reinterpret_cast<unsigned int*>(
+        reinterpret_cast<size_t>(buf) & ~size_t(0x2));
+    unsigned int shift = (reinterpret_cast<size_t>(buf) & 0x2) ? 16 : 0;
+    unsigned int old_val = *addr, assumed, new_val;
+    do {
+        assumed = old_val;
+        unsigned short h_bits = static_cast<unsigned short>((assumed >> shift) & 0xFFFF);
+        __half h_old = *reinterpret_cast<__half*>(&h_bits);
+        __half h_new = h_old + hval;
+        unsigned short s_new = *reinterpret_cast<unsigned short*>(&h_new);
+        new_val = (assumed & ~(0xFFFFu << shift)) | (static_cast<unsigned int>(s_new) << shift);
+        old_val = atomicCAS(addr, assumed, new_val);
+    } while (assumed != old_val);
+    unsigned short r_bits = static_cast<unsigned short>((old_val >> shift) & 0xFFFF);
+    return *reinterpret_cast<float16*>(&r_bits);
 #else  // CUDA compiled by NVRTC
 #if __CUDA_ARCH__ >= 700
 #if defined(__clang__)  // CUDA compiled by Clang

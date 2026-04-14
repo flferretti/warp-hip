@@ -599,7 +599,7 @@ void cubql_bvh_rebuild_host(CuBQLBVH& bvh);
 // all of its leaves nodes are stored as the first bvh.num_leaf_nodes nodes
 void reorder_top_down_bvh(BVH& bvh_host);
 
-#if WP_ENABLE_CUDA
+#if WP_ENABLE_CUDA || WP_ENABLE_HIP
 
 void bvh_create_device(
     void* context,
@@ -620,7 +620,7 @@ void cubql_bvh_destroy_device(CuBQLBVH& bvh);
 void cubql_bvh_refit_device(CuBQLBVH& bvh);
 void cubql_bvh_rebuild_device(CuBQLBVH& bvh);
 
-#endif  // WP_ENABLE_CUDA
+#endif  // WP_ENABLE_CUDA || WP_ENABLE_HIP
 
 }  // namespace wp
 
