@@ -327,12 +327,28 @@ int cuda_init()
                 int minor = 0;
                 check_cu(cuDeviceGetAttribute_f(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device));
                 check_cu(cuDeviceGetAttribute_f(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
+#if WP_ENABLE_HIP
+                // Use gcnArchName to get full arch number (e.g. "gfx1150" -> 1150)
+                hipDeviceProp_t props;
+                if (hipGetDeviceProperties(&props, i) == hipSuccess) {
+                    const char* name = props.gcnArchName;
+                    // skip "gfx" prefix, parse integer (stop at ':' for target features)
+                    if (strncmp(name, "gfx", 3) == 0) {
+                        g_devices[i].arch = (int)strtol(name + 3, nullptr, 10);
+                    } else {
+                        g_devices[i].arch = 10 * major + minor;
+                    }
+                } else {
+                    g_devices[i].arch = 10 * major + minor;
+                }
+#else
                 g_devices[i].arch = 10 * major + minor;
 #ifdef CUDA_VERSION
 #if CUDA_VERSION < 13000
                 if (g_devices[i].arch == 110) {
                     g_devices[i].arch = 101;  // Thor SM change
                 }
+#endif
 #endif
 #endif
                 g_device_map[device] = &g_devices[i];
@@ -1926,12 +1942,16 @@ void wp_nvrtc_supported_archs(int* archs)
         cuDeviceGetCount_f(&count);
         for (int i = 0; i < count; i++)
         {
-            CUdevice device;
-            cuDeviceGet_f(&device, i);
-            int major = 0, minor = 0;
-            cuDeviceGetAttribute_f(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device);
-            cuDeviceGetAttribute_f(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device);
-            archs[i] = 10 * major + minor;
+            hipDeviceProp_t props;
+            if (hipGetDeviceProperties(&props, i) == hipSuccess) {
+                const char* name = props.gcnArchName;
+                if (strncmp(name, "gfx", 3) == 0)
+                    archs[i] = (int)strtol(name + 3, nullptr, 10);
+                else
+                    archs[i] = 0;
+            } else {
+                archs[i] = 0;
+            }
         }
     }
 #else
@@ -3837,7 +3857,7 @@ size_t wp_cuda_compile_program(
 
 #if WP_ENABLE_HIP
     (void)arch_suffix;
-    snprintf(arch_opt, max_arch, "--gpu-architecture=gfx%d", arch);
+    snprintf(arch_opt, max_arch, "--offload-arch=gfx%d", arch);
     arch_opt_lto[0] = '\0';
 #else
     // arch_suffix is "" (no suffix), "a" (arch-specific), or "f" (family-specific)
