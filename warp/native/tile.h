@@ -5045,7 +5045,7 @@ template <
     typename TileC,
     typename Alpha,
     typename Beta>
-TileC& tile_matmul(
+CUDA_CALLABLE TileC& tile_matmul(
     Fwd fun_forward, AdjA fun_backward_A, AdjB fun_backward_B, TileA& A, TileB& B, TileC& C, Alpha& alpha, Beta& beta
 )
 {
@@ -5095,7 +5095,7 @@ template <
     typename TileC,
     typename Alpha,
     typename Beta>
-TileC& tile_matmul_acc(
+CUDA_CALLABLE TileC& tile_matmul_acc(
     Fwd fun_forward, AdjA fun_backward_A, AdjB fun_backward_B, TileA& A, TileB& B, TileC& C, Alpha& alpha, Beta& beta
 )
 {
@@ -5148,7 +5148,7 @@ template <
     typename Beta,
     typename AdjAlpha,
     typename AdjBeta>
-void adj_tile_matmul_acc(
+CUDA_CALLABLE void adj_tile_matmul_acc(
     Fwd fun_forward,
     AdjA fun_backward_A,
     AdjB fun_backward_B,
@@ -5228,7 +5228,7 @@ template <
     typename Beta,
     typename AdjAlpha,
     typename AdjBeta>
-void adj_tile_matmul(
+CUDA_CALLABLE void adj_tile_matmul(
     Fwd fun_forward,
     AdjA fun_backward_A,
     AdjB fun_backward_B,
