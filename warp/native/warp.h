@@ -26,6 +26,8 @@ WP_API int wp_is_error_output_enabled();
 
 // whether Warp was compiled with CUDA support
 WP_API int wp_is_cuda_enabled();
+// whether Warp was compiled with HIP/ROCm support
+WP_API int wp_is_hip_enabled();
 // whether Warp was compiled with enhanced CUDA compatibility
 WP_API int wp_is_cuda_compatibility_enabled();
 // whether Warp was compiled with MathDx support

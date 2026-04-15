@@ -141,7 +141,16 @@ void wp_set_error_output_enabled(int enable) { wp::set_error_output_enabled(bool
 
 int wp_is_error_output_enabled() { return int(wp::is_error_output_enabled()); }
 
-int wp_is_cuda_enabled() { return int(WP_ENABLE_CUDA); }
+int wp_is_cuda_enabled() { return int(WP_ENABLE_CUDA || WP_ENABLE_GPU); }
+
+int wp_is_hip_enabled()
+{
+#if WP_ENABLE_GPU
+    return 1;
+#else
+    return 0;
+#endif
+}
 
 int wp_is_cuda_compatibility_enabled() { return int(WP_ENABLE_CUDA_COMPATIBILITY); }
 

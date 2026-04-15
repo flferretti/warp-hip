@@ -4751,6 +4751,8 @@ class Runtime:
 
             self.core.wp_is_cuda_enabled.argtypes = None
             self.core.wp_is_cuda_enabled.restype = ctypes.c_int
+            self.core.wp_is_hip_enabled.argtypes = None
+            self.core.wp_is_hip_enabled.restype = ctypes.c_int
             self.core.wp_is_cuda_compatibility_enabled.argtypes = None
             self.core.wp_is_cuda_compatibility_enabled.restype = ctypes.c_int
             self.core.wp_is_mathdx_enabled.argtypes = None
@@ -5267,6 +5269,7 @@ class Runtime:
         self.context_map[None] = self.cpu_device
 
         self.is_cuda_enabled = bool(self.core.wp_is_cuda_enabled())
+        self.is_hip_enabled = bool(self.core.wp_is_hip_enabled())
         self.is_cuda_compatibility_enabled = bool(self.core.wp_is_cuda_compatibility_enabled())
 
         self.toolkit_version = None  # CTK version used to build the core lib
@@ -5378,7 +5381,12 @@ class Runtime:
             if warp.config._git_commit_hash is not None:
                 greeting.append(f"   Git commit: {warp.config._git_commit_hash}")
 
-            if cuda_device_count > 0:
+            if self.is_hip_enabled:
+                if cuda_device_count > 0:
+                    greeting.append("   ROCm (HIP) enabled")
+                else:
+                    greeting.append("   ROCm (HIP) enabled, but no devices found")
+            elif cuda_device_count > 0:
                 # print CUDA version info
                 greeting.append(
                     f"   CUDA Toolkit {self.toolkit_version[0]}.{self.toolkit_version[1]}, Driver {self.driver_version[0]}.{self.driver_version[1]}"
@@ -5413,7 +5421,7 @@ class Runtime:
                 alias_str = f'"{cuda_device.alias}"'
                 if cuda_device.is_primary:
                     name_str = f'"{cuda_device.name}"'
-                    arch_str = f"sm_{cuda_device.arch}"
+                    arch_str = f"gfx{cuda_device.arch}" if self.is_hip_enabled else f"sm_{cuda_device.arch}"
                     mem_str = f"{cuda_device.total_memory / 1024 / 1024 / 1024:.0f} GiB"
                     if cuda_device.is_mempool_supported:
                         if cuda_device.is_mempool_enabled:
