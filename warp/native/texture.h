@@ -643,6 +643,12 @@ template <typename T> __device__ T tex3D(unsigned long long texObj, float x, flo
 #define WP_CUDA_TEX 1
 #endif
 
+// HIP device compilation: texture sampling not supported, return zero.
+// The CPU software sampling path cannot be used in device code.
+#if defined(__HIPCC__) && defined(__CUDA_ARCH__)
+#define WP_HIP_DEVICE_TEX 1
+#endif
+
 template <typename T> struct texture_sample_helper;
 
 template <> struct texture_sample_helper<float> {
@@ -650,6 +656,8 @@ template <> struct texture_sample_helper<float> {
     {
 #if defined(WP_CUDA_TEX)
         return tex1D<float>(tex.tex, u);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return 0.0f;
 #else
         if (tex.tex == 0)
             return 0.0f;
@@ -662,6 +670,8 @@ template <> struct texture_sample_helper<float> {
     {
 #if defined(WP_CUDA_TEX)
         return tex2D<float>(tex.tex, u, v);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return 0.0f;
 #else
         if (tex.tex == 0)
             return 0.0f;
@@ -674,6 +684,8 @@ template <> struct texture_sample_helper<float> {
     {
 #if defined(WP_CUDA_TEX)
         return tex3D<float>(tex.tex, u, v, w);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return 0.0f;
 #else
         if (tex.tex == 0)
             return 0.0f;
@@ -691,6 +703,8 @@ template <> struct texture_sample_helper<vec2f> {
 #if defined(WP_CUDA_TEX)
         float2 val = tex1D<float2>(tex.tex, u);
         return vec2f(val.x, val.y);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec2f(0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec2f(0.0f, 0.0f);
@@ -704,6 +718,8 @@ template <> struct texture_sample_helper<vec2f> {
 #if defined(WP_CUDA_TEX)
         float2 val = tex2D<float2>(tex.tex, u, v);
         return vec2f(val.x, val.y);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec2f(0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec2f(0.0f, 0.0f);
@@ -717,6 +733,8 @@ template <> struct texture_sample_helper<vec2f> {
 #if defined(WP_CUDA_TEX)
         float2 val = tex3D<float2>(tex.tex, u, v, w);
         return vec2f(val.x, val.y);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec2f(0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec2f(0.0f, 0.0f);
@@ -734,6 +752,8 @@ template <> struct texture_sample_helper<vec4f> {
 #if defined(WP_CUDA_TEX)
         float4 val = tex1D<float4>(tex.tex, u);
         return vec4f(val.x, val.y, val.z, val.w);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
@@ -750,6 +770,8 @@ template <> struct texture_sample_helper<vec4f> {
 #if defined(WP_CUDA_TEX)
         float4 val = tex2D<float4>(tex.tex, u, v);
         return vec4f(val.x, val.y, val.z, val.w);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
@@ -766,6 +788,8 @@ template <> struct texture_sample_helper<vec4f> {
 #if defined(WP_CUDA_TEX)
         float4 val = tex3D<float4>(tex.tex, u, v, w);
         return vec4f(val.x, val.y, val.z, val.w);
+#elif defined(WP_HIP_DEVICE_TEX)
+        return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 #else
         if (tex.tex == 0)
             return vec4f(0.0f, 0.0f, 0.0f, 0.0f);
