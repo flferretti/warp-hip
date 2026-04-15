@@ -3910,6 +3910,10 @@ class Device:
             # CPU devices don't use CUDA compilation
             return None
 
+        # HIP always produces device code directly, no PTX equivalent
+        if self.runtime.is_hip_enabled:
+            return "cubin"
+
         if not self.is_cubin_supported:
             return "ptx"
 
