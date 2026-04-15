@@ -637,12 +637,18 @@ template <typename T> __device__ T tex3D(unsigned long long texObj, float x, flo
 #endif
 
 // Helper to convert CUDA types to Warp types
+// HIP texture objects use a different type (__hip_texture*) than CUDA (uint64),
+// so we exclude the device texture path for HIP and fall through to the CPU path.
+#if defined(__CUDA_ARCH__) && !defined(__HIPCC__)
+#define WP_CUDA_TEX 1
+#endif
+
 template <typename T> struct texture_sample_helper;
 
 template <> struct texture_sample_helper<float> {
     static CUDA_CALLABLE float sample_1d(const texture1d_t& tex, float u)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         return tex1D<float>(tex.tex, u);
 #else
         if (tex.tex == 0)
@@ -654,7 +660,7 @@ template <> struct texture_sample_helper<float> {
 
     static CUDA_CALLABLE float sample_2d(const texture2d_t& tex, float u, float v)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         return tex2D<float>(tex.tex, u, v);
 #else
         if (tex.tex == 0)
@@ -666,7 +672,7 @@ template <> struct texture_sample_helper<float> {
 
     static CUDA_CALLABLE float sample_3d(const texture3d_t& tex, float u, float v, float w)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         return tex3D<float>(tex.tex, u, v, w);
 #else
         if (tex.tex == 0)
@@ -682,7 +688,7 @@ template <> struct texture_sample_helper<float> {
 template <> struct texture_sample_helper<vec2f> {
     static CUDA_CALLABLE vec2f sample_1d(const texture1d_t& tex, float u)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float2 val = tex1D<float2>(tex.tex, u);
         return vec2f(val.x, val.y);
 #else
@@ -695,7 +701,7 @@ template <> struct texture_sample_helper<vec2f> {
 
     static CUDA_CALLABLE vec2f sample_2d(const texture2d_t& tex, float u, float v)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float2 val = tex2D<float2>(tex.tex, u, v);
         return vec2f(val.x, val.y);
 #else
@@ -708,7 +714,7 @@ template <> struct texture_sample_helper<vec2f> {
 
     static CUDA_CALLABLE vec2f sample_3d(const texture3d_t& tex, float u, float v, float w)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float2 val = tex3D<float2>(tex.tex, u, v, w);
         return vec2f(val.x, val.y);
 #else
@@ -725,7 +731,7 @@ template <> struct texture_sample_helper<vec2f> {
 template <> struct texture_sample_helper<vec4f> {
     static CUDA_CALLABLE vec4f sample_1d(const texture1d_t& tex, float u)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float4 val = tex1D<float4>(tex.tex, u);
         return vec4f(val.x, val.y, val.z, val.w);
 #else
@@ -741,7 +747,7 @@ template <> struct texture_sample_helper<vec4f> {
 
     static CUDA_CALLABLE vec4f sample_2d(const texture2d_t& tex, float u, float v)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float4 val = tex2D<float4>(tex.tex, u, v);
         return vec4f(val.x, val.y, val.z, val.w);
 #else
@@ -757,7 +763,7 @@ template <> struct texture_sample_helper<vec4f> {
 
     static CUDA_CALLABLE vec4f sample_3d(const texture3d_t& tex, float u, float v, float w)
     {
-#if defined(__CUDA_ARCH__)
+#if defined(WP_CUDA_TEX)
         float4 val = tex3D<float4>(tex.tex, u, v, w);
         return vec4f(val.x, val.y, val.z, val.w);
 #else
