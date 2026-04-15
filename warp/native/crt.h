@@ -358,7 +358,7 @@ inline bool isinf(double x) { return _wp_isinf(x); }
 
 #endif  // WP_NO_CRT
 
-#if !defined(__CUDACC__)
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
 
 /*
  * From Cephes Library polevl.c
@@ -496,4 +496,4 @@ inline double erfcinv(double x) { return erfinv(1.0 - x); }
 
 inline float erfcinvf(float x) { return (float)erfcinv((double)x); }
 
-#endif  // !defined(__CUDACC__)
+#endif  // !defined(__CUDACC__) && !defined(__HIPCC__)
