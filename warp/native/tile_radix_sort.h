@@ -83,7 +83,7 @@ constexpr inline CUDA_CALLABLE int next_higher_pow2(int input)
 }
 
 
-#if defined(__CUDA_ARCH__)
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
 
 
 // Bitonic sort fast pass for small arrays
@@ -1033,7 +1033,7 @@ template <typename TileK, typename TileV> void tile_sort(TileK& t, TileV& t2, in
 }
 
 
-#endif  // !defined(__CUDA_ARCH__)
+#endif  // !defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
 
 
 template <typename TileK, typename TileV> inline void adj_tile_sort(TileK& t, TileV& t2, TileK& adj_t1, TileV& adj_t2)
