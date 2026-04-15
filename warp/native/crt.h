@@ -244,6 +244,9 @@ inline bool isnan(float x) { return __builtin_isnan(x); }
 inline bool isnan(double x) { return __builtin_isnan(x); }
 inline bool isinf(float x) { return __builtin_isinf(x); }
 inline bool isinf(double x) { return __builtin_isinf(x); }
+#ifndef assert
+#define assert(expression) ((void)0)
+#endif
 #endif
 
 #else

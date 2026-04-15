@@ -3971,8 +3971,8 @@ size_t wp_cuda_compile_program(
 
 #if WP_ENABLE_HIP
     // hipRTC defines __HIPCC__ and __HIP_DEVICE_COMPILE__ automatically.
-    // __CUDA_ARCH__ is defined conditionally in builtin.h (only during device compilation)
-    // so that existing device code guards work correctly without affecting host code paths.
+    // Do NOT define __CUDA_ARCH__ — clang validates host side of __host__ __device__
+    // functions strictly, causing errors with device-only intrinsics like __syncthreads.
     opts.push_back(WP_RTC_DEFINE "WP_ENABLE_HIP=1");
 
     if (fast_math)
