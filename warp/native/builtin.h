@@ -7,6 +7,13 @@
 // this header must be independently compilable (i.e.: without external SDK headers)
 // to achieve this we redefine a subset of CRT functions (printf, pow, sin, cos, etc)
 
+// hipRTC: define __CUDA_ARCH__ so GPU code paths are used in tile headers.
+// Combined with CUDA_CALLABLE=__device__ below, this avoids host/device mismatch
+// errors that clang raises when validating __host__ side of __host__ __device__ functions.
+#if defined(__HIPCC__) && defined(WP_NO_CRT) && !defined(__CUDA_ARCH__)
+#define __CUDA_ARCH__ 700
+#endif
+
 #include "crt.h"
 
 #ifdef _WIN32
@@ -16,6 +23,10 @@
 #if !defined(__CUDACC__) && !defined(__HIPCC__)
 #define CUDA_CALLABLE
 #define CUDA_CALLABLE_DEVICE
+#elif defined(__HIPCC__) && defined(WP_NO_CRT)
+// hipRTC: device-only compilation, avoid host-side validation of __syncthreads etc.
+#define CUDA_CALLABLE __device__
+#define CUDA_CALLABLE_DEVICE __device__
 #elif defined(__HIPCC__)
 #define CUDA_CALLABLE __host__ __device__
 #define CUDA_CALLABLE_DEVICE __device__
