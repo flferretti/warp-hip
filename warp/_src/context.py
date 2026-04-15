@@ -10228,12 +10228,17 @@ def print_diagnostics() -> dict:
     if git_commit is not None:
         info["git_commit"] = git_commit
 
-    # CUDA & library info
+    # CUDA / ROCm info
+    is_hip = runtime.is_hip_enabled
     info["cuda_enabled"] = runtime.is_cuda_enabled
-    info["cuda_toolkit"] = _version_str(runtime.toolkit_version)
-    info["cuda_driver"] = _version_str(runtime.driver_version)
-    info["nvrtc"] = _version_str(runtime.get_nvrtc_version())
-    info["cuda_compatibility"] = runtime.is_cuda_compatibility_enabled
+    info["hip_enabled"] = is_hip
+    if is_hip:
+        info["hiprtc"] = _version_str(runtime.get_nvrtc_version())
+    else:
+        info["cuda_toolkit"] = _version_str(runtime.toolkit_version)
+        info["cuda_driver"] = _version_str(runtime.driver_version)
+        info["nvrtc"] = _version_str(runtime.get_nvrtc_version())
+        info["cuda_compatibility"] = runtime.is_cuda_compatibility_enabled
 
     info["mathdx_enabled"] = bool(runtime.core.wp_is_mathdx_enabled())
     libmathdx_ver = runtime.get_libmathdx_version()
@@ -10255,12 +10260,15 @@ def print_diagnostics() -> dict:
     for cuda_device in runtime.cuda_devices:
         if not cuda_device.is_primary:
             continue
+        arch_prefix = "gfx" if is_hip else "sm_"
+        cu_label = "CUs" if is_hip else "SMs"
         devices.append(
             {
                 "alias": cuda_device.alias,
                 "name": cuda_device.name,
-                "arch": f"sm_{cuda_device.arch}",
+                "arch": f"{arch_prefix}{cuda_device.arch}",
                 "sm_count": cuda_device.sm_count,
+                "cu_label": cu_label,
                 "memory_gb": round(cuda_device.total_memory / (1024**3), 1),
                 "mempool_enabled": cuda_device.is_mempool_enabled if cuda_device.is_mempool_supported else False,
                 "pci_bus_id": cuda_device.pci_bus_id,
@@ -10296,15 +10304,21 @@ def print_diagnostics() -> dict:
     if "git_commit" in info:
         _field("Git commit:", info["git_commit"])
 
-    _section("CUDA")
-    _field("Enabled:", info["cuda_enabled"])
-    if info["cuda_toolkit"] is not None:
-        _field("Toolkit:", info["cuda_toolkit"])
-    if info["cuda_driver"] is not None:
-        _field("Driver:", info["cuda_driver"])
-    if info["nvrtc"] is not None:
-        _field("NVRTC:", info["nvrtc"])
-    _field("Forward compat:", info["cuda_compatibility"])
+    if is_hip:
+        _section("ROCm (HIP)")
+        _field("Enabled:", info["cuda_enabled"])
+        if info.get("hiprtc") is not None:
+            _field("hipRTC:", info["hiprtc"])
+    else:
+        _section("CUDA")
+        _field("Enabled:", info["cuda_enabled"])
+        if info.get("cuda_toolkit") is not None:
+            _field("Toolkit:", info["cuda_toolkit"])
+        if info.get("cuda_driver") is not None:
+            _field("Driver:", info["cuda_driver"])
+        if info.get("nvrtc") is not None:
+            _field("NVRTC:", info["nvrtc"])
+        _field("Forward compat:", info.get("cuda_compatibility", False))
 
     _section("Libraries")
     _field("MathDx:", info["libmathdx"] if info["mathdx_enabled"] and info["libmathdx"] else "not available")
@@ -10324,7 +10338,7 @@ def print_diagnostics() -> dict:
         if "arch" in dev:
             _field("Memory:", f"{dev['memory_gb']} GiB", indent=4)
             _field("Arch:", dev["arch"], indent=4)
-            _field("SMs:", dev["sm_count"], indent=4)
+            _field(f"{dev.get('cu_label', 'SMs')}:", dev["sm_count"], indent=4)
             _field("PCI:", dev["pci_bus_id"], indent=4)
             _field("Mempool:", "enabled" if dev["mempool_enabled"] else "disabled", indent=4)
     lines.append("")
