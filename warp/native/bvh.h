@@ -247,8 +247,8 @@ __device__ inline wp::BVHPackedNodeHalf bvh_load_node(const wp::BVHPackedNodeHal
 #endif  // USE_LOAD4
 }
 #else
-inline wp::BVHPackedNodeHalf bvh_load_node(const wp::BVHPackedNodeHalf* nodes, int index) { return nodes[index]; }
-#endif  // __CUDACC__
+CUDA_CALLABLE inline wp::BVHPackedNodeHalf bvh_load_node(const wp::BVHPackedNodeHalf* nodes, int index) { return nodes[index]; }
+#endif  // __CUDA_ARCH__
 
 CUDA_CALLABLE inline int clz(int x)
 {

@@ -267,10 +267,10 @@ CUDA_CALLABLE inline bool intersect_ray_tri_rtcd(
 
 #ifndef __CUDA_ARCH__
 
-// these are provided as built-ins by CUDA
-inline float __int_as_float(int i) { return *reinterpret_cast<float*>(&i); }
+// these are provided as built-ins by CUDA and HIP device code
+CUDA_CALLABLE inline float __int_as_float(int i) { return *reinterpret_cast<float*>(&i); }
 
-inline int __float_as_int(float f) { return *reinterpret_cast<int*>(&f); }
+CUDA_CALLABLE inline int __float_as_int(float f) { return *reinterpret_cast<int*>(&f); }
 
 #endif
 
