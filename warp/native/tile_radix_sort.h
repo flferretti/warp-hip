@@ -462,7 +462,12 @@ inline CUDA_CALLABLE int warp_scan_inclusive(int lane, unsigned int ballot_mask)
 
 inline CUDA_CALLABLE int warp_scan_inclusive(int lane, unsigned int mask, bool thread_contributes_element)
 {
+#if defined(__HIPCC__)
+    // HIP's __ballot_sync requires a 64-bit mask (warp width is 64)
+    return warp_scan_inclusive(lane, __ballot_sync((unsigned long long)mask, thread_contributes_element));
+#else
     return warp_scan_inclusive(lane, __ballot_sync(mask, thread_contributes_element));
+#endif
 }
 
 template <typename T> inline CUDA_CALLABLE T warp_scan_inclusive(int lane, T value)
