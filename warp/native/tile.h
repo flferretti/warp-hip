@@ -869,7 +869,7 @@ template <typename T, typename L> struct tile_register_t {
 // helper to allocate a register tile like another tile
 // users can either specify a template explicitly or
 // pass in another concrete instance
-template <typename Tile> auto tile_register_like(Tile* t = nullptr)
+template <typename Tile> CUDA_CALLABLE auto tile_register_like(Tile* t = nullptr)
 {
     using T = typename Tile::Type;
     using L = typename Tile::Layout;
@@ -888,7 +888,7 @@ template <typename Shape, typename T> inline CUDA_CALLABLE auto tile_register_li
 }
 
 // helper to construct a register tile from a type and a list of dims
-template <typename T, int... Dims> auto tile_register()
+template <typename T, int... Dims> CUDA_CALLABLE auto tile_register()
 {
     return tile_register_t<T, tile_layout_register_t<tile_shape_t<Dims...>>>();
 }
@@ -1090,7 +1090,7 @@ template <typename T, typename L, bool Owner_ = true> struct tile_shared_t {
     struct Storage {
         T* ptr;
 
-        Storage(T* p)
+        CUDA_CALLABLE Storage(T* p)
             : ptr(p)
         {
         }
@@ -4083,8 +4083,8 @@ inline CUDA_CALLABLE void adj_tile_bit_xor_inplace(TileA& a, TileB& b, AdjTileA&
 }
 
 
-template <typename Tile> typename Tile::Type tile_extract(Tile& t, int i) { return t.extract(tile_coord(i)); }
-template <typename Tile> auto tile_extract(Tile& t, int i, int j)
+template <typename Tile> CUDA_CALLABLE typename Tile::Type tile_extract(Tile& t, int i) { return t.extract(tile_coord(i)); }
+template <typename Tile> CUDA_CALLABLE auto tile_extract(Tile& t, int i, int j)
 {
     if constexpr (is_vector<typename Tile::Type>::value) {
         return t.extract(tile_coord(i))[j];
@@ -4092,7 +4092,7 @@ template <typename Tile> auto tile_extract(Tile& t, int i, int j)
         return t.extract(tile_coord(i, j));
     }
 }
-template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k)
+template <typename Tile> CUDA_CALLABLE auto tile_extract(Tile& t, int i, int j, int k)
 {
     if constexpr (is_vector<typename Tile::Type>::value) {
         return t.extract(tile_coord(i, j))[k];
@@ -4102,7 +4102,7 @@ template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k)
         return t.extract(tile_coord(i, j, k));
     }
 }
-template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k, int l)
+template <typename Tile> CUDA_CALLABLE auto tile_extract(Tile& t, int i, int j, int k, int l)
 {
     if constexpr (is_vector<typename Tile::Type>::value) {
         return t.extract(tile_coord(i, j, k))[l];
@@ -4112,7 +4112,7 @@ template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k, int l)
         return t.extract(tile_coord(i, j, k, l));
     }
 }
-template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k, int l, int m)
+template <typename Tile> CUDA_CALLABLE auto tile_extract(Tile& t, int i, int j, int k, int l, int m)
 {
     if constexpr (is_vector<typename Tile::Type>::value) {
         return t.extract(tile_coord(i, j, k, l))[m];
@@ -4125,7 +4125,7 @@ template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k, int l, 
         );
     }
 }
-template <typename Tile> auto tile_extract(Tile& t, int i, int j, int k, int l, int m, int n)
+template <typename Tile> CUDA_CALLABLE auto tile_extract(Tile& t, int i, int j, int k, int l, int m, int n)
 {
     if constexpr (is_matrix<typename Tile::Type>::value) {
         return t.extract(tile_coord(i, j, k, l)).data[m][n];

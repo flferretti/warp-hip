@@ -621,7 +621,7 @@ inline void adj_tile_reduce_axis_impl()
 // convenience methods for specific reductions
 
 // whole-tile sum
-template <typename Tile> auto tile_sum(Tile& t) { return tile_reduce(add, t); }
+template <typename Tile> CUDA_CALLABLE auto tile_sum(Tile& t) { return tile_reduce(add, t); }
 
 // special case adjoint for summation
 template <typename Tile, typename AdjTile> CUDA_CALLABLE void adj_tile_sum(Tile& t, Tile& adj_t, AdjTile& adj_ret)
@@ -650,7 +650,7 @@ template <typename Tile, typename AdjTile> CUDA_CALLABLE void adj_tile_sum(Tile&
 }
 
 // axis-specific sum
-template <int Axis, typename Tile> auto tile_sum(Tile& t)
+template <int Axis, typename Tile> CUDA_CALLABLE auto tile_sum(Tile& t)
 {
     return tile_reduce_axis_impl<Axis>([](auto x, auto y) { return add(x, y); }, t);
 }
@@ -729,14 +729,14 @@ template <int Axis, typename Tile, typename AdjTile> void adj_tile_sum(Tile& t, 
     }
 }
 
-template <typename Tile> auto tile_max(Tile& t) { return tile_reduce(max, t); }
+template <typename Tile> CUDA_CALLABLE auto tile_max(Tile& t) { return tile_reduce(max, t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_max(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {
     // todo: not implemented
 }
 
-template <typename Tile> auto tile_min(Tile& t) { return tile_reduce(min, t); }
+template <typename Tile> CUDA_CALLABLE auto tile_min(Tile& t) { return tile_reduce(min, t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_min(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {
@@ -744,14 +744,14 @@ template <typename Tile, typename AdjTile> void adj_tile_min(Tile& t, Tile& adj_
 }
 
 
-template <typename Tile> auto tile_argmax(Tile& t) { return tile_arg_reduce(max, argmax_tracker, t); }
+template <typename Tile> CUDA_CALLABLE auto tile_argmax(Tile& t) { return tile_arg_reduce(max, argmax_tracker, t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_argmax(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {
     // todo: not implemented
 }
 
-template <typename Tile> auto tile_argmin(Tile& t) { return tile_arg_reduce(min, argmin_tracker, t); }
+template <typename Tile> CUDA_CALLABLE auto tile_argmin(Tile& t) { return tile_arg_reduce(min, argmin_tracker, t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_argmin(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {

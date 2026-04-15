@@ -253,14 +253,14 @@ template <typename Tile, typename Op = OpAdd<typename Tile::Type>> inline auto t
 
 #endif  // !defined(__CUDA_ARCH__)
 
-template <typename Tile> auto tile_scan_inclusive(Tile& t) { return tile_scan_inclusive_impl(t); }
+template <typename Tile> CUDA_CALLABLE auto tile_scan_inclusive(Tile& t) { return tile_scan_inclusive_impl(t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_scan_inclusive(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {
     // todo: not implemented
 }
 
-template <typename Tile> auto tile_scan_exclusive(Tile& t) { return tile_scan_exclusive_impl(t); }
+template <typename Tile> CUDA_CALLABLE auto tile_scan_exclusive(Tile& t) { return tile_scan_exclusive_impl(t); }
 
 template <typename Tile, typename AdjTile> void adj_tile_scan_exclusive(Tile& t, Tile& adj_t, AdjTile& adj_ret)
 {
@@ -268,7 +268,7 @@ template <typename Tile, typename AdjTile> void adj_tile_scan_exclusive(Tile& t,
 }
 
 // Max scan operations
-template <typename Tile> auto tile_scan_max_inclusive(Tile& t)
+template <typename Tile> CUDA_CALLABLE auto tile_scan_max_inclusive(Tile& t)
 {
     return tile_scan_inclusive_impl<Tile, OpMax<typename Tile::Type>>(t);
 }
@@ -279,7 +279,7 @@ template <typename Tile, typename AdjTile> void adj_tile_scan_max_inclusive(Tile
 }
 
 // Min scan operations
-template <typename Tile> auto tile_scan_min_inclusive(Tile& t)
+template <typename Tile> CUDA_CALLABLE auto tile_scan_min_inclusive(Tile& t)
 {
     return tile_scan_inclusive_impl<Tile, OpMin<typename Tile::Type>>(t);
 }
