@@ -228,11 +228,22 @@ typedef unsigned long long uint64_t;
 
 #define M_PI 3.14159265358979323846
 
-#if defined(__CUDACC__)
+#if defined(__CUDACC__) || defined(__HIPCC__)
 
 #if defined(__clang__) && !defined(WP_ENABLE_HIP)
 // When compiling CUDA with barebones Clang we need to define its builtins and runtime functions ourselves.
 #include "cuda_crt.h"
+#endif
+
+#if defined(__HIPCC__)
+// hipRTC provides most builtins via hiprtc_runtime.h, but we need
+// isfinite/isnan/isinf in the global namespace for builtin.h wrappers.
+inline bool isfinite(float x) { return __builtin_isfinite(x); }
+inline bool isfinite(double x) { return __builtin_isfinite(x); }
+inline bool isnan(float x) { return __builtin_isnan(x); }
+inline bool isnan(double x) { return __builtin_isnan(x); }
+inline bool isinf(float x) { return __builtin_isinf(x); }
+inline bool isinf(double x) { return __builtin_isinf(x); }
 #endif
 
 #else
