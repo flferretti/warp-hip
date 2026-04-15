@@ -122,9 +122,9 @@ int wp_init(const char* expected_version)
         );
     }
 
-#if WP_ENABLE_CUDA
+#if WP_ENABLE_CUDA || WP_ENABLE_GPU
     int cuda_init(void);
-    // note: it's safe to proceed even if CUDA initialization failed
+    // note: it's safe to proceed even if CUDA/HIP initialization failed
     cuda_init();
 #endif
 
