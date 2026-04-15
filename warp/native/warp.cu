@@ -3824,7 +3824,11 @@ size_t wp_cuda_compile_program(
     }
 
     char include_opt[max_path];
+#if WP_ENABLE_HIP
+    strcpy(include_opt, "-I");
+#else
     strcpy(include_opt, "--include-path=");
+#endif
     strcat(include_opt, include_dir);
 
     const int max_arch = 128;
@@ -3852,6 +3856,15 @@ size_t wp_cuda_compile_program(
     opts.push_back(arch_opt);
     opts.push_back(include_opt);
     opts.push_back("--std=c++17");
+
+#if WP_ENABLE_HIP
+    // hipRTC uses clang-style options
+    #define WP_RTC_DEFINE "-D"
+    #define WP_RTC_UNDEF "-U"
+#else
+    #define WP_RTC_DEFINE "--define-macro="
+    #define WP_RTC_UNDEF "--undefine-macro="
+#endif
 
     // CUDA 12.9+ supports --Ofast-compile
 #if CUDA_VERSION >= 12090
@@ -3894,35 +3907,45 @@ size_t wp_cuda_compile_program(
     }
 
     if (debug) {
-        opts.push_back("--define-macro=_DEBUG");
+        opts.push_back(WP_RTC_DEFINE "_DEBUG");
+#if !WP_ENABLE_HIP
         opts.push_back("--generate-line-info");
 #ifndef _WIN32
         opts.push_back("--device-debug");  // -G
 #endif
+#endif
     } else {
-        opts.push_back("--define-macro=NDEBUG");
+        opts.push_back(WP_RTC_DEFINE "NDEBUG");
 
+#if !WP_ENABLE_HIP
         if (lineinfo)
             opts.push_back("--generate-line-info");
+#endif
     }
 
     if (verify_fp)
-        opts.push_back("--define-macro=WP_VERIFY_FP");
+        opts.push_back(WP_RTC_DEFINE "WP_VERIFY_FP");
     else
-        opts.push_back("--undefine-macro=WP_VERIFY_FP");
+        opts.push_back(WP_RTC_UNDEF "WP_VERIFY_FP");
 
 #if WP_ENABLE_MATHDX
-    opts.push_back("--define-macro=WP_ENABLE_MATHDX=1");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_MATHDX=1");
 #else
-    opts.push_back("--define-macro=WP_ENABLE_MATHDX=0");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_MATHDX=0");
 #endif
 
 #if WP_ENABLE_CK
-    opts.push_back("--define-macro=WP_ENABLE_CK=1");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_CK=1");
 #else
-    opts.push_back("--define-macro=WP_ENABLE_CK=0");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_CK=0");
 #endif
 
+#if WP_ENABLE_HIP
+    if (fast_math)
+        opts.push_back("-ffast-math");
+    (void)fuse_fp;
+    (void)lineinfo;
+#else
     if (fast_math)
         opts.push_back("--use_fast_math");
 
@@ -3930,9 +3953,14 @@ size_t wp_cuda_compile_program(
         opts.push_back("--fmad=true");
     else
         opts.push_back("--fmad=false");
+#endif
 
     for (int i = 0; i < num_cuda_include_dirs; i++) {
+#if WP_ENABLE_HIP
+        stored_options.push_back(std::string("-I") + cuda_include_dirs[i]);
+#else
         stored_options.push_back(std::string("--include-path=") + cuda_include_dirs[i]);
+#endif
         opts.push_back(stored_options.back().c_str());
     }
 
