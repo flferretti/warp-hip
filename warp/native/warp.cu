@@ -3970,10 +3970,9 @@ size_t wp_cuda_compile_program(
 #endif
 
 #if WP_ENABLE_HIP
-    // hipRTC defines __HIPCC__ and __HIP_DEVICE_COMPILE__ but not __CUDA_ARCH__.
-    // Warp headers use __CUDA_ARCH__ to gate device code paths (crt.h, bvh.h, intersect.h).
-    // Do NOT define __CUDACC__ — it pulls in cuda_crt.h which conflicts with hipRTC builtins.
-    opts.push_back(WP_RTC_DEFINE "__CUDA_ARCH__=700");
+    // hipRTC defines __HIPCC__ and __HIP_DEVICE_COMPILE__ automatically.
+    // __CUDA_ARCH__ is defined conditionally in builtin.h (only during device compilation)
+    // so that existing device code guards work correctly without affecting host code paths.
     opts.push_back(WP_RTC_DEFINE "WP_ENABLE_HIP=1");
 
     if (fast_math)

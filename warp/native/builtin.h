@@ -7,6 +7,12 @@
 // this header must be independently compilable (i.e.: without external SDK headers)
 // to achieve this we redefine a subset of CRT functions (printf, pow, sin, cos, etc)
 
+// In hipRTC, __HIP_DEVICE_COMPILE__ is defined only during device compilation.
+// Map it to __CUDA_ARCH__ so existing device code guards work unchanged.
+#if defined(__HIP_DEVICE_COMPILE__) && !defined(__CUDA_ARCH__)
+#define __CUDA_ARCH__ 700
+#endif
+
 #include "crt.h"
 
 #ifdef _WIN32
