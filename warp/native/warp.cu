@@ -3142,10 +3142,15 @@ static void* compile_conditional_module(int arch, bool use_ptx)
         return NULL;
 
     char arch_opt[128];
+#if WP_ENABLE_HIP
+    (void)use_ptx;
+    snprintf(arch_opt, sizeof(arch_opt), "--offload-arch=gfx%d", arch);
+#else
     if (use_ptx)
         snprintf(arch_opt, sizeof(arch_opt), "--gpu-architecture=compute_%d", arch);
     else
         snprintf(arch_opt, sizeof(arch_opt), "--gpu-architecture=sm_%d", arch);
+#endif
 
     std::vector<const char*> opts;
     opts.push_back(arch_opt);
@@ -3875,7 +3880,11 @@ size_t wp_cuda_compile_program(
     std::vector<const char*> opts;
     opts.push_back(arch_opt);
     opts.push_back(include_opt);
+#if WP_ENABLE_HIP
+    opts.push_back("-std=c++17");
+#else
     opts.push_back("--std=c++17");
+#endif
 
 #if WP_ENABLE_HIP
     // hipRTC uses clang-style options
