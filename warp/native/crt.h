@@ -230,7 +230,7 @@ typedef unsigned long long uint64_t;
 
 #if defined(__CUDACC__)
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(WP_ENABLE_HIP)
 // When compiling CUDA with barebones Clang we need to define its builtins and runtime functions ourselves.
 #include "cuda_crt.h"
 #endif
