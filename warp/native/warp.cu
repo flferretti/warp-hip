@@ -3970,6 +3970,11 @@ size_t wp_cuda_compile_program(
 #endif
 
 #if WP_ENABLE_HIP
+    // hipRTC doesn't define __CUDA_ARCH__ or __CUDACC__ but Warp headers rely on them
+    opts.push_back(WP_RTC_DEFINE "__CUDA_ARCH__=700");
+    opts.push_back(WP_RTC_DEFINE "__CUDACC__");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_HIP=1");
+
     if (fast_math)
         opts.push_back("-ffast-math");
     (void)fuse_fp;
