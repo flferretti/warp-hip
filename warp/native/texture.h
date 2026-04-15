@@ -227,9 +227,24 @@ struct cuda_array_desc_t {
     int32 dtype;
 };
 
+// HIP texture objects use a different type (__hip_texture*) than CUDA (uint64),
+// so we exclude the device texture path for HIP and fall through to the CPU path.
+#if defined(__CUDA_ARCH__) && !defined(__HIPCC__)
+#define WP_CUDA_TEX 1
+#endif
+
+// HIP device compilation: texture sampling not supported, return zero.
+// The CPU software sampling path cannot be used in device code.
+#if defined(__HIPCC__) && defined(__CUDA_ARCH__)
+#define WP_HIP_DEVICE_TEX 1
+#endif
+
 // ============================================================================
 // CPU Software Texture Sampling Helpers
+// Excluded from HIP device compilation (hipRTC JIT) since these are host-only
+// functions and HIP textures are not supported.
 // ============================================================================
+#if !defined(WP_HIP_DEVICE_TEX)
 
 // Apply address mode to get a valid texture coordinate
 inline float cpu_apply_address_mode_1d(float coord, int size, int address_mode)
@@ -613,6 +628,8 @@ inline float cpu_sample_3d_channel(const Texture* tex, float u, float v, float w
     }
 }
 
+#endif // !defined(WP_HIP_DEVICE_TEX)
+
 // ============================================================================
 // Texture Sampling Functions
 // ============================================================================
@@ -634,19 +651,6 @@ template <typename T> __device__ T tex3D(unsigned long long texObj, float x, flo
     T v {};
     return v;
 }
-#endif
-
-// Helper to convert CUDA types to Warp types
-// HIP texture objects use a different type (__hip_texture*) than CUDA (uint64),
-// so we exclude the device texture path for HIP and fall through to the CPU path.
-#if defined(__CUDA_ARCH__) && !defined(__HIPCC__)
-#define WP_CUDA_TEX 1
-#endif
-
-// HIP device compilation: texture sampling not supported, return zero.
-// The CPU software sampling path cannot be used in device code.
-#if defined(__HIPCC__) && defined(__CUDA_ARCH__)
-#define WP_HIP_DEVICE_TEX 1
 #endif
 
 template <typename T> struct texture_sample_helper;
