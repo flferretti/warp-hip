@@ -401,10 +401,10 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
                     libs.append("-Wl,--end-group")
             else:
                 # Fall back to shared libraries (e.g. conda-forge llvmdev/clangdev)
-                libs = ["-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
-            libs.append(f"-L{libpath}")
-            libs.append("-lpthread")
-            libs.append("-ldl")
+                libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
+            if f"-L{libpath}" not in libs:
+                libs.insert(0, f"-L{libpath}")
+            libs.extend([f"-Wl,-rpath,{libpath}", "-lpthread", "-ldl"])
             if sys.platform != "darwin":
                 libs.append("-lrt")
 
