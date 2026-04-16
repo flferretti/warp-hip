@@ -111,7 +111,13 @@ static const HostCpuInfo& get_host_cpu_info()
         result.name = llvm::sys::getHostCPUName().str();
 
         llvm::StringMap<bool> feature_map;
+#if LLVM_VERSION_MAJOR >= 22
+        auto features_opt = llvm::sys::getHostCPUFeatures();
+        if (features_opt)
+            feature_map = std::move(*features_opt);
+#else
         llvm::sys::getHostCPUFeatures(feature_map);
+#endif
 
         for (const auto& f : feature_map) {
             std::string flag = (f.second ? "+" : "-") + f.first().str();
@@ -521,15 +527,9 @@ WP_API int wp_compile_cpp(
         }
     }
 
-#if LLVM_VERSION_MAJOR >= 20
-    llvm::TargetMachine* target_machine = target->createTargetMachine(
-        llvm::Triple(target_triple), CPU, features, target_options, relocation_model, code_model, codegen_opt
-    );
-#else
     llvm::TargetMachine* target_machine = target->createTargetMachine(
         target_triple, CPU, features, target_options, relocation_model, code_model, codegen_opt
     );
-#endif
 
     module->setDataLayout(target_machine->createDataLayout());
 
@@ -576,15 +576,9 @@ WP_API int wp_compile_cuda(
     const char* features = "+ptx75";  // Warp requires CUDA 11.5, which supports PTX ISA 7.5
     llvm::TargetOptions target_options;
     llvm::Reloc::Model relocation_model = llvm::Reloc::PIC_;
-#if LLVM_VERSION_MAJOR >= 20
-    llvm::TargetMachine* target_machine = target->createTargetMachine(
-        llvm::Triple("nvptx64-nvidia-cuda"), cuda_target_arch, features, target_options, relocation_model
-    );
-#else
     llvm::TargetMachine* target_machine = target->createTargetMachine(
         "nvptx64-nvidia-cuda", cuda_target_arch, features, target_options, relocation_model
     );
-#endif
 
     module->setDataLayout(target_machine->createDataLayout());
 
