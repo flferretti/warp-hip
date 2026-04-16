@@ -158,6 +158,8 @@ typedef hipMemPoolAttr               cudaMemPoolAttr;
 #define cudaMemAllocationTypePinned         hipMemAllocationTypePinned
 #define cudaMemHandleTypeNone               hipMemHandleTypeNone
 
+#define cudaStreamCreate              hipStreamCreate
+#define cudaStreamDestroy             hipStreamDestroy
 #define cudaStreamBeginCapture        hipStreamBeginCapture
 #define cudaStreamBeginCaptureToGraph  hipStreamBeginCaptureToGraph
 #define cudaStreamEndCapture          hipStreamEndCapture
