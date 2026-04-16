@@ -404,8 +404,11 @@ static ContextInfo* get_context_info(CUcontext ctx)
             // workaround for https://nvbugspro.nvidia.com/bug/4456003
             if (device_info->is_mempool_supported) {
                 void* dummy = NULL;
-                check_cuda(cudaMallocAsync(&dummy, 1, NULL));
-                check_cuda(cudaFreeAsync(dummy, NULL));
+                cudaStream_t s;
+                check_cuda(cudaStreamCreate(&s));
+                check_cuda(cudaMallocAsync(&dummy, 1, s));
+                check_cuda(cudaFreeAsync(dummy, s));
+                check_cuda(cudaStreamDestroy(s));
             }
 
             ContextInfo context_info;
