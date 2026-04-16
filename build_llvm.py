@@ -366,24 +366,29 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
         clang_dll_path = os.path.join(build_path, "bin", lib_name)
 
         if hasattr(args, "llvm_path") and args.llvm_path:
-            # Use existing LLVM installation (e.g., from Docker /opt/llvm)
+            # Use existing LLVM installation (e.g., conda-forge llvmdev/clangdev)
             libpath = os.path.join(args.llvm_path, "lib")
             if not os.path.exists(libpath):
                 raise FileNotFoundError(f"LLVM library directory not found at {libpath}")
+            # Use shared libraries directly — conda-forge provides monolithic libLLVM.so
+            use_shared_llvm = True
         elif args.build_llvm:
             # obtain Clang and LLVM libraries from the local build
             install_path = os.path.join(llvm_install_path, f"{args.mode}-{arch}")
             libpath = os.path.join(install_path, "lib")
+            use_shared_llvm = False
         else:
             # obtain Clang and LLVM libraries from packman
             fetch_prebuilt_libraries(arch)
             libpath = os.path.join(base_path, "_build", "host-deps", "llvm-project", f"release-{arch}", "lib")
+            use_shared_llvm = False
 
         libs = []
 
-        for _, _, libraries in os.walk(libpath):
-            libs.extend(libraries)
-            break  # just the top level contains library files
+        if not use_shared_llvm:
+            for _, _, libraries in os.walk(libpath):
+                libs.extend(libraries)
+                break  # just the top level contains library files
 
         if os.name == "nt":
             libs.append("Version.lib")
@@ -391,19 +396,21 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
             libs.append("ntdll.lib")
             libs.append(f'/LIBPATH:"{libpath}"')
         else:
-            static_libs = [lib for lib in libs if os.path.splitext(lib)[1] == ".a"]
-            if static_libs:
-                libs = [f"-l{lib[3:-2]}" for lib in static_libs]
-                if sys.platform == "darwin":
-                    libs += libs  # prevents unresolved symbols due to link order
-                else:
-                    libs.insert(0, "-Wl,--start-group")
-                    libs.append("-Wl,--end-group")
-                # Static LLVM depends on zstd and zlib
-                libs.extend(["-lzstd", "-lz"])
-            else:
-                # Fall back to shared libraries (e.g. conda-forge llvmdev/clangdev)
+            if use_shared_llvm:
                 libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
+            else:
+                static_libs = [lib for lib in libs if os.path.splitext(lib)[1] == ".a"]
+                if static_libs:
+                    libs = [f"-l{lib[3:-2]}" for lib in static_libs]
+                    if sys.platform == "darwin":
+                        libs += libs  # prevents unresolved symbols due to link order
+                    else:
+                        libs.insert(0, "-Wl,--start-group")
+                        libs.append("-Wl,--end-group")
+                    # Static LLVM depends on zstd and zlib
+                    libs.extend(["-lzstd", "-lz"])
+                else:
+                    libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
             if f"-L{libpath}" not in libs:
                 libs.insert(0, f"-L{libpath}")
             libs.extend([f"-Wl,-rpath,{libpath}", "-lpthread", "-ldl"])
