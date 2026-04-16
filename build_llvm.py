@@ -391,12 +391,29 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
             libs.append("ntdll.lib")
             libs.append(f'/LIBPATH:"{libpath}"')
         else:
-            libs = [f"-l{lib[3:-2]}" for lib in libs if os.path.splitext(lib)[1] == ".a"]
-            if sys.platform == "darwin":
-                libs += libs  # prevents unresolved symbols due to link order
+            static_libs = [lib for lib in libs if os.path.splitext(lib)[1] == ".a"]
+            if static_libs:
+                libs = [f"-l{lib[3:-2]}" for lib in static_libs]
+                if sys.platform == "darwin":
+                    libs += libs  # prevents unresolved symbols due to link order
+                else:
+                    libs.insert(0, "-Wl,--start-group")
+                    libs.append("-Wl,--end-group")
             else:
-                libs.insert(0, "-Wl,--start-group")
-                libs.append("-Wl,--end-group")
+                # Fall back to shared libraries (e.g. conda-forge llvmdev/clangdev)
+                shared_libs = [lib for lib in libs if ".so" in lib]
+                libs = []
+                for lib in shared_libs:
+                    # Extract library name: libLLVM-18.so -> LLVM-18, libclang-cpp.so.18 -> clang-cpp
+                    name = lib
+                    if name.startswith("lib"):
+                        name = name[3:]
+                    # Remove .so and everything after
+                    so_idx = name.find(".so")
+                    if so_idx != -1:
+                        name = name[:so_idx]
+                    if name and f"-l{name}" not in libs:
+                        libs.append(f"-l{name}")
             libs.append(f"-L{libpath}")
             libs.append("-lpthread")
             libs.append("-ldl")

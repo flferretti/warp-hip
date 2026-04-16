@@ -719,7 +719,8 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
             else:
                 version = ""
 
-        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -DWP_ENABLE_HIP=0 -DWP_ENABLE_CK=0 -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI=0 -I"{native_dir}" {includes} '
+        cxx11_abi = os.environ.get("WP_CXX11_ABI", "0")
+        cpp_flags = f'-Werror -Wuninitialized {version} --std=c++17 -fno-rtti -D{cuda_enabled} -DWP_ENABLE_HIP=0 -DWP_ENABLE_CK=0 -D{mathdx_enabled} -D{cuda_compat_enabled} -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -D_GLIBCXX_USE_CXX11_ABI={cxx11_abi} -I"{native_dir}" {includes} '
 
         if hip_enabled:
             cpp_flags += "-DWP_ENABLE_GPU=1 "
