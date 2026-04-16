@@ -372,6 +372,12 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
                 raise FileNotFoundError(f"LLVM library directory not found at {libpath}")
             # Use shared libraries directly — conda-forge provides monolithic libLLVM.so
             use_shared_llvm = True
+            print(f"Using shared LLVM from {libpath}")
+            # Verify shared libs exist
+            import glob as _glob
+            for pattern in ["libLLVM*.so*", "libclang-cpp*.so*"]:
+                matches = _glob.glob(os.path.join(libpath, pattern))
+                print(f"  {pattern}: {matches[:3]}")
         elif args.build_llvm:
             # obtain Clang and LLVM libraries from the local build
             install_path = os.path.join(llvm_install_path, f"{args.mode}-{arch}")
@@ -417,6 +423,7 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
             if sys.platform != "darwin":
                 libs.append("-lrt")
 
+        print(f"warp-clang link libs: {' '.join(libs)}")
         build_dll_for_arch(
             args,
             dll_path=clang_dll_path,
