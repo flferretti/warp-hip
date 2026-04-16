@@ -401,19 +401,7 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
                     libs.append("-Wl,--end-group")
             else:
                 # Fall back to shared libraries (e.g. conda-forge llvmdev/clangdev)
-                shared_libs = [lib for lib in libs if ".so" in lib]
-                libs = []
-                for lib in shared_libs:
-                    # Extract library name: libLLVM-18.so -> LLVM-18, libclang-cpp.so.18 -> clang-cpp
-                    name = lib
-                    if name.startswith("lib"):
-                        name = name[3:]
-                    # Remove .so and everything after
-                    so_idx = name.find(".so")
-                    if so_idx != -1:
-                        name = name[:so_idx]
-                    if name and f"-l{name}" not in libs:
-                        libs.append(f"-l{name}")
+                libs = ["-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
             libs.append(f"-L{libpath}")
             libs.append("-lpthread")
             libs.append("-ldl")
