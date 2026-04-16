@@ -403,7 +403,19 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
             libs.append(f'/LIBPATH:"{libpath}"')
         else:
             if use_shared_llvm:
-                libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
+                # Use full paths to shared libs to bypass --as-needed/--allow-shlib-undefined
+                import glob as _glob
+                llvm_so = _glob.glob(os.path.join(libpath, "libLLVM*.so"))
+                clang_so = _glob.glob(os.path.join(libpath, "libclang-cpp*.so"))
+                if not llvm_so:
+                    raise FileNotFoundError(f"libLLVM.so not found in {libpath}")
+                if not clang_so:
+                    raise FileNotFoundError(f"libclang-cpp.so not found in {libpath}")
+                # Pick the shortest name (e.g. libLLVM.so over libLLVM-18.so)
+                llvm_lib = sorted(llvm_so, key=len)[0]
+                clang_lib = sorted(clang_so, key=len)[0]
+                print(f"Using LLVM shared libs: {llvm_lib}, {clang_lib}")
+                libs = [llvm_lib, clang_lib, "-lz", "-lzstd"]
             else:
                 static_libs = [lib for lib in libs if os.path.splitext(lib)[1] == ".a"]
                 if static_libs:
@@ -419,7 +431,7 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
                     libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
             if f"-L{libpath}" not in libs:
                 libs.insert(0, f"-L{libpath}")
-            libs.extend([f"-Wl,-rpath,{libpath}", "-lpthread", "-ldl"])
+            libs.extend([f"-Wl,-rpath,{libpath}", "-Wl,--no-allow-shlib-undefined", "-lpthread", "-ldl"])
             if sys.platform != "darwin":
                 libs.append("-lrt")
 
