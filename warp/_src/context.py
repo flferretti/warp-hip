@@ -4103,76 +4103,10 @@ class Runtime:
 
         self.core = self.load_dll(warp_lib)
 
-        if os.path.exists(llvm_lib):
-            self.llvm = self.load_dll(llvm_lib)
-            # setup c-types for warp-clang.dll
-            self.llvm.wp_lookup.restype = ctypes.c_uint64
-
-            self.llvm.wp_load_obj.argtypes = [
-                ctypes.c_char_p,  # object_file
-                ctypes.c_char_p,  # module_name
-                ctypes.c_bool,  # use_legacy_linker
-            ]
-            self.llvm.wp_load_obj.restype = ctypes.c_int
-
-            self.llvm.wp_compile_cpp.argtypes = [
-                ctypes.c_char_p,  # cpp_src
-                ctypes.c_char_p,  # input_file
-                ctypes.c_char_p,  # include_dir
-                ctypes.c_char_p,  # output_file
-                ctypes.c_bool,  # debug
-                ctypes.c_bool,  # verify_fp
-                ctypes.c_bool,  # fuse_fp
-                ctypes.c_bool,  # tiles_in_stack_memory
-                ctypes.POINTER(ctypes.c_char_p),  # extra_flags
-                ctypes.c_int,  # optimization_level
-                ctypes.c_bool,  # verbose
-                ctypes.c_bool,  # use_precompiled_headers
-                ctypes.c_char_p,  # pch_dir
-                ctypes.c_int,  # block_dim
-            ]
-            self.llvm.wp_compile_cpp.restype = ctypes.c_int
-
-            self.llvm.wp_compile_cuda.argtypes = [
-                ctypes.c_char_p,  # cuda_src
-                ctypes.c_char_p,  # input_file
-                ctypes.c_char_p,  # include_dir
-                ctypes.c_char_p,  # output_file
-                ctypes.c_bool,  # debug
-            ]
-            self.llvm.wp_compile_cuda.restype = ctypes.c_int
-
-            if hasattr(self.llvm, "wp_llvm_version"):
-                self.llvm.wp_llvm_version.argtypes = []
-                self.llvm.wp_llvm_version.restype = ctypes.c_char_p
-
-            # Verify warp-clang version (guard against missing symbol in older/mismatched DLL)
-            if hasattr(self.llvm, "wp_warp_clang_version"):
-                self.llvm.wp_warp_clang_version.argtypes = []
-                self.llvm.wp_warp_clang_version.restype = ctypes.c_char_p
-
-                clang_version_ptr = self.llvm.wp_warp_clang_version()
-                if clang_version_ptr:
-                    clang_version = clang_version_ptr.decode("utf-8")
-                    if clang_version != warp.config.version:
-                        warp._src.utils.warn(
-                            f"Version mismatch detected in warp-clang library.\n"
-                            f"  Expected Warp version: {warp.config.version}\n"
-                            f"  Loaded warp-clang library version: {clang_version}\n"
-                            f"  This may occur due to environment variables or multiple Warp installations."
-                        )
-                else:
-                    warp._src.utils.warn(
-                        "warp-clang version check returned NULL.\n"
-                        "  This may indicate a corrupted or incompatible library."
-                    )
-            else:
-                warp._src.utils.warn(
-                    "warp-clang library does not support version checking.\n"
-                    "  This may indicate an older or mismatched library version."
-                )
-        else:
-            self.llvm = None
+        # Defer warp-clang loading to avoid GPU memory pressure on APUs
+        self._llvm_lib_path = llvm_lib if os.path.exists(llvm_lib) else None
+        self._llvm = None
+        self._llvm_loaded = False
 
         # maps capture ids to graphs
         self.captures = {}
@@ -5514,6 +5448,91 @@ class Runtime:
                 msg.append("Visit https://nvidia.github.io/warp/user_guide/installation.html for guidance.")
                 warp._src.utils.warn("\n   ".join(msg))
 
+    @property
+    def llvm(self):
+        """Lazily load the warp-clang shared library on first access."""
+        if not self._llvm_loaded:
+            self._llvm_loaded = True
+            if self._llvm_lib_path is not None:
+                self._llvm = self._init_llvm(self._llvm_lib_path)
+        return self._llvm
+
+    @llvm.setter
+    def llvm(self, value):
+        self._llvm = value
+        self._llvm_loaded = value is not None or self._llvm_lib_path is None
+
+    def _init_llvm(self, llvm_lib):
+        """Load warp-clang and set up ctypes signatures."""
+        dll = self.load_dll(llvm_lib)
+
+        dll.wp_lookup.restype = ctypes.c_uint64
+
+        dll.wp_load_obj.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_bool,
+        ]
+        dll.wp_load_obj.restype = ctypes.c_int
+
+        dll.wp_compile_cpp.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_bool,
+            ctypes.c_bool,
+            ctypes.c_bool,
+            ctypes.c_bool,
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.c_int,
+            ctypes.c_bool,
+            ctypes.c_bool,
+            ctypes.c_char_p,
+            ctypes.c_int,
+        ]
+        dll.wp_compile_cpp.restype = ctypes.c_int
+
+        dll.wp_compile_cuda.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_bool,
+        ]
+        dll.wp_compile_cuda.restype = ctypes.c_int
+
+        if hasattr(dll, "wp_llvm_version"):
+            dll.wp_llvm_version.argtypes = []
+            dll.wp_llvm_version.restype = ctypes.c_char_p
+
+        if hasattr(dll, "wp_warp_clang_version"):
+            dll.wp_warp_clang_version.argtypes = []
+            dll.wp_warp_clang_version.restype = ctypes.c_char_p
+
+            clang_version_ptr = dll.wp_warp_clang_version()
+            if clang_version_ptr:
+                clang_version = clang_version_ptr.decode("utf-8")
+                if clang_version != warp.config.version:
+                    warp._src.utils.warn(
+                        f"Version mismatch detected in warp-clang library.\n"
+                        f"  Expected Warp version: {warp.config.version}\n"
+                        f"  Loaded warp-clang library version: {clang_version}\n"
+                        f"  This may occur due to environment variables or multiple Warp installations."
+                    )
+            else:
+                warp._src.utils.warn(
+                    "warp-clang version check returned NULL.\n"
+                    "  This may indicate a corrupted or incompatible library."
+                )
+        else:
+            warp._src.utils.warn(
+                "warp-clang library does not support version checking.\n"
+                "  This may indicate an older or mismatched library version."
+            )
+
+        return dll
+
     def _get_or_create_pch_dir(self) -> str:
         """Return a per-thread temporary directory for precompiled header files.
 
@@ -5817,7 +5836,7 @@ def is_cpu_available() -> bool:
     """
     init()
 
-    return runtime.llvm is not None
+    return runtime._llvm_lib_path is not None
 
 
 def is_cuda_available() -> bool:
