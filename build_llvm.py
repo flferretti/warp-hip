@@ -399,6 +399,8 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
                 else:
                     libs.insert(0, "-Wl,--start-group")
                     libs.append("-Wl,--end-group")
+                # Static LLVM depends on zstd and zlib
+                libs.extend(["-lzstd", "-lz"])
             else:
                 # Fall back to shared libraries (e.g. conda-forge llvmdev/clangdev)
                 libs = [f"-L{libpath}", "-lLLVM", "-lclang-cpp", "-lz", "-lzstd"]
