@@ -562,7 +562,9 @@ static int free_deferred_allocs(void* context = NULL)
 
             if (free_info.is_async) {
                 // this could be a regular stream-ordered allocation or a graph allocation
-                cudaError_t res = cudaFreeAsync(free_info.ptr, NULL);
+                ContextInfo* ci = get_context_info(free_info.context);
+                CUstream free_stream = ci ? ci->stream : NULL;
+                cudaError_t res = cudaFreeAsync(free_info.ptr, free_stream);
                 if (res != cudaSuccess) {
                     if (res == cudaErrorInvalidValue) {
                         // This can happen if we try to release the pointer but the graph was
@@ -814,6 +816,8 @@ void wp_free_device_async(void* context, void* ptr)
     // but we set the context here for consistent behaviour
     ContextGuard guard(context);
 
+    ContextInfo* context_info = get_context_info(context);
+
     // NB: Stream-ordered deallocations are tricky, because the memory could still be used on another stream
     // or even multiple streams.  To avoid use-after-free errors, we need to ensure that all preceding work
     // completes before releasing the memory.  The strategy is different for regular stream-ordered allocations
@@ -828,7 +832,8 @@ void wp_free_device_async(void* context, void* ptr)
             // cudaFreeAsync on the null stream does not block or trigger synchronization, but it postpones
             // the deallocation until a synchronization point is reached, so preceding work on this pointer
             // should safely complete.
-            check_cuda(cudaFreeAsync(ptr, NULL));
+            CUstream stream = context_info ? context_info->stream : NULL;
+            check_cuda(cudaFreeAsync(ptr, stream));
         } else {
             // We must defer the free operation until graph capture completes.
             deferred_free(ptr, context, true);
@@ -865,7 +870,8 @@ void wp_free_device_async(void* context, void* ptr)
             if (alloc_info.graph_destroyed) {
                 if (g_captures.empty()) {
                     // try to free the pointer now
-                    cudaError_t res = cudaFreeAsync(ptr, NULL);
+                    CUstream free_stream = context_info ? context_info->stream : NULL;
+                    cudaError_t res = cudaFreeAsync(ptr, free_stream);
                     if (res == cudaErrorInvalidValue) {
                         // This can happen if we try to release the pointer but the graph was
                         // never launched, so the memory isn't mapped.
