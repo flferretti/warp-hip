@@ -405,10 +405,18 @@ static ContextInfo* get_context_info(CUcontext ctx)
             if (device_info->is_mempool_supported) {
                 void* dummy = NULL;
                 cudaStream_t s;
-                check_cuda(cudaStreamCreate(&s));
-                check_cuda(cudaMallocAsync(&dummy, 1, s));
-                check_cuda(cudaFreeAsync(dummy, s));
-                check_cuda(cudaStreamDestroy(s));
+                if (check_cuda(cudaStreamCreate(&s))) {
+                    cudaError_t alloc_err = cudaMallocAsync(&dummy, 1, s);
+                    if (alloc_err == cudaSuccess) {
+                        check_cuda(cudaFreeAsync(dummy, s));
+                    } else {
+                        // GPU may be out of memory; disable mempool for this device
+                        fprintf(stderr, "Warp warning: mempool init failed (error %d), disabling mempool for device %d\n",
+                                (int)alloc_err, (int)device);
+                        device_info->is_mempool_supported = false;
+                    }
+                    check_cuda(cudaStreamDestroy(s));
+                }
             }
 
             ContextInfo context_info;
