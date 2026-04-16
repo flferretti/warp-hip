@@ -285,14 +285,14 @@ template <typename... Ints> constexpr tile_coord_t<sizeof...(Ints)> tile_coord(I
 }
 
 // helpers to construct a coord from a set of indices
-inline auto tile_coord(int i)
+CUDA_CALLABLE inline auto tile_coord(int i)
 {
     auto c = tile_coord_t<1>();
     c.indices[0] = i;
     return c;
 }
 
-inline auto tile_coord(int i, int j)
+CUDA_CALLABLE inline auto tile_coord(int i, int j)
 {
     auto c = tile_coord_t<2>();
     c.indices[0] = i;
@@ -300,7 +300,7 @@ inline auto tile_coord(int i, int j)
     return c;
 }
 
-inline auto tile_coord(int i, int j, int k)
+CUDA_CALLABLE inline auto tile_coord(int i, int j, int k)
 {
     auto c = tile_coord_t<3>();
     c.indices[0] = i;
@@ -309,7 +309,7 @@ inline auto tile_coord(int i, int j, int k)
     return c;
 }
 
-inline auto tile_coord(int i, int j, int k, int l)
+CUDA_CALLABLE inline auto tile_coord(int i, int j, int k, int l)
 {
     auto c = tile_coord_t<4>();
     c.indices[0] = i;
@@ -520,7 +520,7 @@ template <typename T, typename Shape_, bool BoundsCheck = true> struct tile_glob
     array_t<T> data;
     Coord offset;
 
-    tile_global_t(array_t<T>& a, const Coord& c)
+    CUDA_CALLABLE tile_global_t(array_t<T>& a, const Coord& c)
         : data(a)
         , offset(c)
     {
@@ -5488,7 +5488,7 @@ template <bool Upper, typename Fwd, typename TileA> CUDA_CALLABLE void tile_chol
      } while (0)
 
 template <bool Upper, typename Fwd, typename TileA, typename TileY, typename TileX>
-TileX& tile_cholesky_solve(Fwd fun_forward, TileA& A, TileY& Y, TileX& X)
+CUDA_CALLABLE TileX& tile_cholesky_solve(Fwd fun_forward, TileA& A, TileY& Y, TileX& X)
 {
     // Copy y to x
 
@@ -5514,7 +5514,7 @@ TileX& tile_cholesky_solve(Fwd fun_forward, TileA& A, TileY& Y, TileX& X)
 }
 
 template <bool Upper, typename Fwd, typename TileA, typename TileY>
-void tile_cholesky_solve_inplace(Fwd fun_forward, TileA& A, TileY& Y)
+CUDA_CALLABLE void tile_cholesky_solve_inplace(Fwd fun_forward, TileA& A, TileY& Y)
 {
 #if !defined(__CUDA_ARCH__) || WP_ENABLE_MATHDX == 0
 
