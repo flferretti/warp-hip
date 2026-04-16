@@ -222,7 +222,7 @@ template <typename Tile, typename Op> CUDA_CALLABLE_DEVICE auto tile_reduce_impl
             block_sum = warp_reduce(thread_sum, f, mask);
 
         // write from first active lane (warp_reduce result is only valid there)
-        int first_active = __ffs(mask) - 1;
+        int first_active = __ffsll(mask) - 1;
         if (threadIdx.x == first_active)
             output.data[0] = block_sum;
     } else {
@@ -373,7 +373,7 @@ template <int Axis, typename Op, typename Tile> CUDA_CALLABLE_DEVICE auto tile_r
                     block_sum = warp_reduce(thread_sum, f, mask);
 
                 // write from first active lane (warp_reduce result is only valid there)
-                int first_active = __ffs(mask) - 1;
+                int first_active = __ffsll(mask) - 1;
                 if (threadIdx.x == first_active)
                     output_buffer[out_idx] = block_sum;
             } else {
