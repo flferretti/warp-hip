@@ -15,6 +15,15 @@
 
 #include "rand.h"
 
+// Warp mask type for warp intrinsics (64-bit on HIP, 32-bit on CUDA)
+#if defined(__HIPCC__)
+typedef unsigned long long wp_warp_mask_t;
+#define WP_WARP_FULL_MASK 0xFFFFFFFFFFFFFFFFull
+#else
+typedef unsigned int wp_warp_mask_t;
+#define WP_WARP_FULL_MASK 0xFFFFFFFFu
+#endif
+
 #ifdef __clang__
 // disable warnings related to C++17 extensions on CPU JIT builds
 #pragma clang diagnostic push
