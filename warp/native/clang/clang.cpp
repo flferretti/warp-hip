@@ -240,12 +240,6 @@ static std::unique_ptr<clang::CompilerInstance> create_compiler(
     auto& compiler_invocation = compiler_instance->getInvocation();
     clang::CompilerInvocation::CreateFromArgs(compiler_invocation, args, *diagnostic_engine);
 
-    // Disable the LLVM module verifier. When another LLVM instance is loaded
-    // in the same process (e.g. ROCm's libamd_comgr), intrinsic attribute
-    // lists may be allocated from a different LLVMContext, causing spurious
-    // "Attribute list does not match Module context" verifier failures.
-    compiler_invocation.getCodeGenOpts().VerifyModule = false;
-
     if (debug) {
 #if LLVM_VERSION_MAJOR >= 18
         compiler_invocation.getCodeGenOpts().setDebugInfo(llvm::codegenoptions::FullDebugInfo);

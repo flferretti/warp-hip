@@ -5464,15 +5464,7 @@ class Runtime:
 
     def _init_llvm(self, llvm_lib):
         """Load warp-clang and set up ctypes signatures."""
-        # Use RTLD_DEEPBIND so warp-clang resolves LLVM symbols from its own
-        # libLLVM rather than from ROCm's bundled LLVM (different version).
-        mode = os.RTLD_NOW
-        if hasattr(os, "RTLD_DEEPBIND"):
-            mode |= os.RTLD_DEEPBIND
-        try:
-            dll = ctypes.CDLL(llvm_lib, mode=mode)
-        except OSError as e:
-            raise RuntimeError(f"Failed to load the shared library '{llvm_lib}'") from e
+        dll = self.load_dll(llvm_lib)
 
         dll.wp_lookup.restype = ctypes.c_uint64
 

@@ -370,14 +370,12 @@ def build_warp_clang_for_arch(args, lib_name: str, arch: str) -> None:
             libpath = os.path.join(args.llvm_path, "lib")
             if not os.path.exists(libpath):
                 raise FileNotFoundError(f"LLVM library directory not found at {libpath}")
-            # Use shared libraries directly — conda-forge provides monolithic libLLVM.so
-            use_shared_llvm = True
-            print(f"Using shared LLVM from {libpath}")
-            # Verify shared libs exist
-            import glob as _glob
-            for pattern in ["libLLVM*.so*", "libclang-cpp*.so*"]:
-                matches = _glob.glob(os.path.join(libpath, pattern))
-                print(f"  {pattern}: {matches[:3]}")
+            # Statically link LLVM/Clang to isolate symbols from other LLVM
+            # instances in the process (e.g. ROCm's libamd_comgr).
+            # -fvisibility=hidden + --exclude-libs,ALL ensure no LLVM symbols
+            # leak from warp-clang.so.
+            use_shared_llvm = False
+            print(f"Using LLVM static libs from {libpath}")
         elif args.build_llvm:
             # obtain Clang and LLVM libraries from the local build
             install_path = os.path.join(llvm_install_path, f"{args.mode}-{arch}")
