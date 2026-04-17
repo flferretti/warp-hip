@@ -798,7 +798,7 @@ template <typename T, typename L> struct tile_register_t {
 
     // apply a lambda to all valid entries in the tile
     // Op should be a functor that takes a register index and tile_coord_t as input
-    template <typename Op> void apply(Op op)
+    template <typename Op> CUDA_CALLABLE void apply(Op op)
     {
         WP_PRAGMA_UNROLL
         for (int i = 0; i < Layout::NumRegs; ++i) {
