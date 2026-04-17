@@ -823,6 +823,9 @@ void* wp_alloc_device_async(void* context, size_t s)
 
 void wp_free_device_async(void* context, void* ptr)
 {
+    if (ptr == NULL)
+        return;
+
     // stream-ordered allocators generally don't rely on the current context,
     // but we set the context here for consistent behaviour
     ContextGuard guard(context);
@@ -1112,6 +1115,9 @@ __global__ void memset_kernel(int* dest, int value, size_t n)
 
 void wp_memset_device(void* context, void* dest, int value, size_t n)
 {
+    if (n == 0 || dest == NULL)
+        return;
+
     ContextGuard guard(context);
 
     if (true)  // ((n%4) > 0)
