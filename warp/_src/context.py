@@ -5466,7 +5466,7 @@ class Runtime:
         """Load warp-clang and set up ctypes signatures."""
         # Use RTLD_DEEPBIND so warp-clang resolves LLVM symbols from its own
         # libLLVM rather than from ROCm's bundled LLVM (different version).
-        mode = ctypes.RTLD_NOW
+        mode = os.RTLD_NOW
         if hasattr(os, "RTLD_DEEPBIND"):
             mode |= os.RTLD_DEEPBIND
         try:
