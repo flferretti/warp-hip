@@ -13,7 +13,9 @@
 
 #pragma once
 
-#if WP_ENABLE_HIP && WP_ENABLE_CK && defined(__HIPCC__)
+// MFMA intrinsics are only available on CDNA architectures (gfx908+).
+// RDNA GPUs (gfx10xx, gfx11xx) do not support MFMA.
+#if WP_ENABLE_HIP && WP_ENABLE_CK && defined(__HIPCC__) && __has_builtin(__builtin_amdgcn_mfma_f32_16x16x4f32)
 
 #include <type_traits>
 

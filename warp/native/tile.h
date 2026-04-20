@@ -9,7 +9,7 @@
 #define WP_ENABLE_CK 0
 #endif
 
-#if WP_ENABLE_CK && defined(__HIPCC__)
+#if WP_ENABLE_CK && defined(__HIPCC__) && __has_builtin(__builtin_amdgcn_mfma_f32_16x16x4f32)
 #include "ck_gemm.h"
 #endif
 
