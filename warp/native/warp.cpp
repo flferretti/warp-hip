@@ -9,6 +9,10 @@
 #include "scan.h"
 #include "version.h"
 
+#ifndef WP_ENABLE_GPU
+#define WP_ENABLE_GPU 0
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
