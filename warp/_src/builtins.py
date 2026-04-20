@@ -12026,6 +12026,7 @@ def tile_matmul_lto_dispatch_func(
         arch is not None
         and warp._src.context.runtime.core.wp_is_ck_enabled()
         and options.get("enable_mathdx_gemm", True)
+        and arch < 1000  # MFMA only available on CDNA (gfx9xx)
     )
 
     if not use_mathdx and not use_ck:
