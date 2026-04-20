@@ -303,6 +303,11 @@ int cuda_init()
                 check_cu(cuDeviceGetAttribute_f(
                     &g_devices[i].is_mempool_supported, CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, device
                 ));
+#if WP_ENABLE_HIP
+                // Disable mempool on HIP — hipMallocAsync/hipFreeAsync graph nodes
+                // cause illegal memory access on RDNA GPUs during graph replay
+                g_devices[i].is_mempool_supported = 0;
+#endif
                 check_cu(
                     cuDeviceGetAttribute_f(&g_devices[i].sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device)
                 );
