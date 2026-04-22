@@ -2995,10 +2995,42 @@ bool wp_cuda_graph_create_exec(void* context, void* stream, void* graph, void** 
 
     cudaGraphExec_t graph_exec = NULL;
 #if WP_ENABLE_HIP
-    // HIP's AutoFreeOnLaunch flag may not be fully supported on all devices;
-    // use plain instantiation and skip explicit upload (which can also be unreliable)
-    if (!check_cuda(cudaGraphInstantiateWithFlags(&graph_exec, (cudaGraph_t)graph, 0)))
-        return false;
+    // Use legacy instantiation to get error diagnostics
+    {
+        hipGraphNode_t error_node = NULL;
+        char log_buffer[256] = {};
+        hipError_t err = hipGraphInstantiate(&graph_exec, (hipGraph_t)graph, &error_node, log_buffer, sizeof(log_buffer));
+        if (err != hipSuccess) {
+            fprintf(stderr, "Warp: hipGraphInstantiate failed (error %d)", (int)err);
+            if (log_buffer[0])
+                fprintf(stderr, ": %s", log_buffer);
+            fprintf(stderr, "\n");
+            return false;
+        }
+        // Print graph node count and types for diagnostics
+        size_t num_nodes = 0;
+        hipGraphGetNodes((hipGraph_t)graph, NULL, &num_nodes);
+        fprintf(stderr, "Warp: HIP graph instantiated with %zu nodes\n", num_nodes);
+        if (num_nodes > 0 && num_nodes < 10000) {
+            std::vector<hipGraphNode_t> nodes(num_nodes);
+            hipGraphGetNodes((hipGraph_t)graph, nodes.data(), &num_nodes);
+            int kernel_count = 0, memcpy_count = 0, memset_count = 0, alloc_count = 0, free_count = 0, other_count = 0;
+            for (size_t i = 0; i < num_nodes; i++) {
+                hipGraphNodeType type;
+                hipGraphNodeGetType(nodes[i], &type);
+                switch (type) {
+                    case hipGraphNodeTypeKernel: kernel_count++; break;
+                    case hipGraphNodeTypeMemcpy: memcpy_count++; break;
+                    case hipGraphNodeTypeMemset: memset_count++; break;
+                    case hipGraphNodeTypeMemAlloc: alloc_count++; break;
+                    case hipGraphNodeTypeMemFree: free_count++; break;
+                    default: other_count++; break;
+                }
+            }
+            fprintf(stderr, "  kernels=%d memcpy=%d memset=%d alloc=%d free=%d other=%d\n",
+                    kernel_count, memcpy_count, memset_count, alloc_count, free_count, other_count);
+        }
+    }
 #else
     if (!check_cuda(
             cudaGraphInstantiateWithFlags(&graph_exec, (cudaGraph_t)graph, cudaGraphInstantiateFlagAutoFreeOnLaunch)
