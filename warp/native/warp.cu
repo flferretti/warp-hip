@@ -575,6 +575,9 @@ static int free_deferred_allocs(void* context = NULL)
                 // this could be a regular stream-ordered allocation or a graph allocation
                 ContextInfo* ci = get_context_info(free_info.context);
                 CUstream free_stream = ci ? ci->stream : NULL;
+#if WP_ENABLE_HIP
+                check_cuda(cudaFree(free_info.ptr));
+#else
                 cudaError_t res = cudaFreeAsync(free_info.ptr, free_stream);
                 if (res != cudaSuccess) {
                     if (res == cudaErrorInvalidValue) {
@@ -587,6 +590,7 @@ static int free_deferred_allocs(void* context = NULL)
                         check_cuda(res);
                     }
                 }
+#endif
             } else {
                 check_cuda(cudaFree(free_info.ptr));
             }
@@ -897,6 +901,9 @@ void wp_free_device_async(void* context, void* ptr)
                 if (g_captures.empty()) {
                     // try to free the pointer now
                     CUstream free_stream = context_info ? context_info->stream : NULL;
+#if WP_ENABLE_HIP
+                    check_cuda(cudaFree(ptr));
+#else
                     cudaError_t res = cudaFreeAsync(ptr, free_stream);
                     if (res == cudaErrorInvalidValue) {
                         // This can happen if we try to release the pointer but the graph was
@@ -907,6 +914,7 @@ void wp_free_device_async(void* context, void* ptr)
                         // check for other errors
                         check_cuda(res);
                     }
+#endif
                 } else {
                     // We must defer the operation until graph capture completes.
                     deferred_free(ptr, context, true);
