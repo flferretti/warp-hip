@@ -408,7 +408,11 @@ static ContextInfo* get_context_info(CUcontext ctx)
                 if (check_cuda(cudaStreamCreate(&s))) {
                     cudaError_t alloc_err = cudaMallocAsync(&dummy, 1, s);
                     if (alloc_err == cudaSuccess) {
+#if WP_ENABLE_HIP
+                        check_cuda(cudaFree(dummy));
+#else
                         check_cuda(cudaFreeAsync(dummy, s));
+#endif
                     } else {
                         // GPU may be out of memory; disable mempool for this device
                         fprintf(stderr, "Warp warning: mempool init failed (error %d), disabling mempool for device %d\n",
@@ -2990,6 +2994,12 @@ bool wp_cuda_graph_create_exec(void* context, void* stream, void* graph, void** 
     ContextGuard guard(context);
 
     cudaGraphExec_t graph_exec = NULL;
+#if WP_ENABLE_HIP
+    // HIP's AutoFreeOnLaunch flag may not be fully supported on all devices;
+    // use plain instantiation and skip explicit upload (which can also be unreliable)
+    if (!check_cuda(cudaGraphInstantiateWithFlags(&graph_exec, (cudaGraph_t)graph, 0)))
+        return false;
+#else
     if (!check_cuda(
             cudaGraphInstantiateWithFlags(&graph_exec, (cudaGraph_t)graph, cudaGraphInstantiateFlagAutoFreeOnLaunch)
         ))
@@ -3001,6 +3011,7 @@ bool wp_cuda_graph_create_exec(void* context, void* stream, void* graph, void** 
     CUstream cuda_stream = static_cast<CUstream>(stream);
     if (!check_cuda(cudaGraphUpload(graph_exec, cuda_stream)))
         return false;
+#endif
 
     if (graph_exec_ret)
         *graph_exec_ret = graph_exec;
