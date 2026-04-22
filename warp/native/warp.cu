@@ -847,7 +847,13 @@ void wp_free_device_async(void* context, void* ptr)
             // the deallocation until a synchronization point is reached, so preceding work on this pointer
             // should safely complete.
             CUstream stream = context_info ? context_info->stream : NULL;
+#if WP_ENABLE_HIP
+            // HIP's hipFreeAsync can return invalid argument for pool-allocated memory;
+            // fall back to synchronous free
+            check_cuda(cudaFree(ptr));
+#else
             check_cuda(cudaFreeAsync(ptr, stream));
+#endif
         } else {
             // We must defer the free operation until graph capture completes.
             deferred_free(ptr, context, true);
@@ -865,6 +871,11 @@ void wp_free_device_async(void* context, void* ptr)
             // work completes before deallocating.  This works with both Warp-initiated and external captures
             // and avoids the need to explicitly track all streams used during the capture.
             CaptureInfo* capture = capture_iter->second;
+#if WP_ENABLE_HIP
+            // HIP's hipGraphAddMemFreeNode is unreliable on RDNA;
+            // track as temporary allocation to be freed after capture ends
+            capture->tmp_allocs.push_back({context, ptr, true});
+#else
             cudaGraph_t graph = get_capture_graph(capture->stream);
             std::vector<cudaGraphNode_t> leaf_nodes;
             if (graph && get_graph_leaf_nodes(graph, leaf_nodes)) {
@@ -875,6 +886,7 @@ void wp_free_device_async(void* context, void* ptr)
                     ));
                 }
             }
+#endif
 
             // we're done with this allocation, it's owned by the graph
             g_graph_allocs.erase(alloc_iter);
