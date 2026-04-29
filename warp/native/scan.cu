@@ -32,6 +32,10 @@ namespace cub = hipcub;
 
 template <typename T> void scan_device(const T* values_in, T* values_out, int n, bool inclusive)
 {
+    // hipcub crashes on empty arrays
+    if (n <= 0)
+        return;
+
     ContextGuard guard(wp_cuda_context_get_current());
 
     cudaStream_t stream = static_cast<cudaStream_t>(wp_cuda_stream_get_current());

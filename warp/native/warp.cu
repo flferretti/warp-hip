@@ -882,6 +882,13 @@ void* wp_alloc_device_async(void* context, size_t s)
 
 void wp_free_device_async(void* context, void* ptr)
 {
+#if defined(__HIP_PLATFORM_AMD__)
+    // HIP returns error 1 (invalid argument) for null pointer frees
+    // where CUDA silently succeeds
+    if (!ptr)
+        return;
+#endif
+
     // stream-ordered allocators generally don't rely on the current context,
     // but we set the context here for consistent behaviour
     ContextGuard guard(context);
@@ -1230,6 +1237,12 @@ __global__ void memset_kernel(int* dest, int value, size_t n)
 
 void wp_memset_device(void* context, void* dest, int value, size_t n)
 {
+#if defined(__HIP_PLATFORM_AMD__)
+    // HIP returns errors for null/zero memset where CUDA is permissive
+    if (!dest || n == 0)
+        return;
+#endif
+
     ContextGuard guard(context);
 
     if (true)  // ((n%4) > 0)
@@ -3030,6 +3043,13 @@ bool wp_cuda_graph_create_exec(void* context, void* stream, void* graph, void** 
     ContextGuard guard(context);
 
     cudaGraphExec_t graph_exec = NULL;
+#if defined(__HIP_PLATFORM_AMD__)
+    // hipGraphInstantiateFlagAutoFreeOnLaunch silently corrupts graphs on HIP,
+    // causing error 1 (invalid argument) or error 700 (illegal memory access)
+    // during hipGraphLaunch. Use the legacy instantiation API instead.
+    if (!check_cuda(hipGraphInstantiate(&graph_exec, (cudaGraph_t)graph, nullptr, nullptr, 0)))
+        return false;
+#else
     if (!check_cuda(
             cudaGraphInstantiateWithFlags(&graph_exec, (cudaGraph_t)graph, cudaGraphInstantiateFlagAutoFreeOnLaunch)
         ))
@@ -3041,6 +3061,7 @@ bool wp_cuda_graph_create_exec(void* context, void* stream, void* graph, void** 
     CUstream cuda_stream = static_cast<CUstream>(stream);
     if (!check_cuda(cudaGraphUpload(graph_exec, cuda_stream)))
         return false;
+#endif
 
     if (graph_exec_ret)
         *graph_exec_ret = graph_exec;
