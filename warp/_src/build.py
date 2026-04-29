@@ -85,13 +85,30 @@ def build_cuda(
         else:
             raise TypeError(f"Unsupported arch type: {type(arch)}")
 
+        # Collect extra include dirs for hipRTC (clang resource dir for float.h etc.)
+        cuda_include_dirs = []
+        rocm_path = os.environ.get("ROCM_PATH")
+        if rocm_path:
+            import glob
+            clang_dirs = sorted(glob.glob(os.path.join(rocm_path, "lib", "clang", "*", "include")))
+            if clang_dirs:
+                cuda_include_dirs.append(clang_dirs[-1])
+
+        num_include_dirs = len(cuda_include_dirs)
+        if num_include_dirs > 0:
+            arr_include_dirs = (ctypes.c_char_p * num_include_dirs)(
+                *[d.encode("utf-8") for d in cuda_include_dirs]
+            )
+        else:
+            arr_include_dirs = None
+
         err = warp._src.context.runtime.core.wp_cuda_compile_program(
             src,
             program_name_bytes,
             arch_bytes,
             inc_path,
-            0,
-            None,
+            num_include_dirs,
+            arr_include_dirs,
             config == "debug",
             optimization_level,
             warp.config.verbose,

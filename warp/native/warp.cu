@@ -4135,7 +4135,11 @@ size_t wp_cuda_compile_program(
     }
 
     char include_opt[max_path];
+#if defined(__HIP_PLATFORM_AMD__)
+    strcpy(include_opt, "-I");
+#else
     strcpy(include_opt, "--include-path=");
+#endif
     strcat(include_opt, include_dir);
 
     const int max_arch = 128;
@@ -4148,10 +4152,15 @@ size_t wp_cuda_compile_program(
     }
 
     const char* arch_str = arch;
+#if defined(__HIP_PLATFORM_AMD__)
+    if (strncmp(arch_str, "gfx", 3) == 0)
+        arch_str += 3;
+#else
     if (strncmp(arch_str, "sm_", 3) == 0)
         arch_str += 3;
     else if (strncmp(arch_str, "compute_", 8) == 0)
         arch_str += 8;
+#endif
 
     int arch_int = std::atoi(arch_str);
     if (arch_int <= 0) {
@@ -4159,6 +4168,9 @@ size_t wp_cuda_compile_program(
         return size_t(-1);
     }
 
+#if defined(__HIP_PLATFORM_AMD__)
+    snprintf(arch_opt, max_arch, "--offload-arch=gfx%d", arch_int);
+#else
     if (use_ptx) {
         snprintf(arch_opt, max_arch, "--gpu-architecture=compute_%d", arch_int);
         snprintf(arch_opt_lto, max_arch, "-arch=compute_%d", arch_int);
@@ -4166,11 +4178,25 @@ size_t wp_cuda_compile_program(
         snprintf(arch_opt, max_arch, "--gpu-architecture=sm_%d", arch_int);
         snprintf(arch_opt_lto, max_arch, "-arch=sm_%d", arch_int);
     }
+#endif
 
     std::vector<const char*> opts;
     opts.push_back(arch_opt);
     opts.push_back(include_opt);
+#if defined(__HIP_PLATFORM_AMD__)
+    opts.push_back("-std=c++17");
+#else
     opts.push_back("--std=c++17");
+#endif
+
+#if defined(__HIP_PLATFORM_AMD__)
+    // hipRTC uses clang-style flags
+    #define WP_RTC_DEFINE "-D"
+    #define WP_RTC_UNDEF "-U"
+#else
+    #define WP_RTC_DEFINE "--define-macro="
+    #define WP_RTC_UNDEF "--undefine-macro="
+#endif
 
     // CUDA 12.9+ supports --Ofast-compile
 #if CUDA_VERSION >= 12090
@@ -4210,29 +4236,38 @@ size_t wp_cuda_compile_program(
     }
 
     if (debug) {
-        opts.push_back("--define-macro=_DEBUG");
+        opts.push_back(WP_RTC_DEFINE "_DEBUG");
+#if !defined(__HIP_PLATFORM_AMD__)
         opts.push_back("--generate-line-info");
 #ifndef _WIN32
         opts.push_back("--device-debug");  // -G
 #endif
+#endif
     } else {
-        opts.push_back("--define-macro=NDEBUG");
+        opts.push_back(WP_RTC_DEFINE "NDEBUG");
 
+#if !defined(__HIP_PLATFORM_AMD__)
         if (lineinfo)
             opts.push_back("--generate-line-info");
+#endif
     }
 
     if (verify_fp)
-        opts.push_back("--define-macro=WP_VERIFY_FP");
+        opts.push_back(WP_RTC_DEFINE "WP_VERIFY_FP");
     else
-        opts.push_back("--undefine-macro=WP_VERIFY_FP");
+        opts.push_back(WP_RTC_UNDEF "WP_VERIFY_FP");
 
 #if WP_ENABLE_MATHDX
-    opts.push_back("--define-macro=WP_ENABLE_MATHDX=1");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_MATHDX=1");
 #else
-    opts.push_back("--define-macro=WP_ENABLE_MATHDX=0");
+    opts.push_back(WP_RTC_DEFINE "WP_ENABLE_MATHDX=0");
 #endif
 
+#if defined(__HIP_PLATFORM_AMD__)
+    if (fast_math)
+        opts.push_back("-ffast-math");
+    (void)fuse_fp;
+#else
     if (fast_math)
         opts.push_back("--use_fast_math");
 
@@ -4240,12 +4275,18 @@ size_t wp_cuda_compile_program(
         opts.push_back("--fmad=true");
     else
         opts.push_back("--fmad=false");
+#endif
 
     for (int i = 0; i < num_cuda_include_dirs; i++) {
+#if defined(__HIP_PLATFORM_AMD__)
+        stored_options.push_back(std::string("-I") + cuda_include_dirs[i]);
+#else
         stored_options.push_back(std::string("--include-path=") + cuda_include_dirs[i]);
+#endif
         opts.push_back(stored_options.back().c_str());
     }
 
+#if !defined(__HIP_PLATFORM_AMD__)
     opts.push_back("--device-as-default-execution-space");
     opts.push_back("--extra-device-vectorization");
     opts.push_back("--restrict");
@@ -4266,6 +4307,7 @@ size_t wp_cuda_compile_program(
         fprintf(stderr, "Warp warning: CUDA version is less than 12.8, compile_time_trace is not supported\n");
 #endif
     }
+#endif // !defined(__HIP_PLATFORM_AMD__)
 
     nvrtcProgram prog;
     nvrtcResult res;
