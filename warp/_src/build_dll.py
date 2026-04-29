@@ -863,6 +863,7 @@ def build_dll_for_arch(args, dll_path, cpp_paths, cu_paths, arch, libs: list[str
                         os.path.join(hip_lib_dir, "libhiprtc-builtins.a")
                     ):
                         ld_inputs.append("-lhiprtc-builtins")
+                    ld_inputs.append("-lpthread")
                 else:
                     ld_inputs.append(
                         f'-L"{cuda_home}/lib64" -lcudart_static -lnvrtc_static -lnvrtc-builtins_static -lnvptxcompiler_static -lpthread -ldl -lrt'
